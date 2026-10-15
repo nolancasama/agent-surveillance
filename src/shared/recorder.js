@@ -7,6 +7,8 @@
    ============================================================ */
 'use strict';
 
+import { Sfx } from './sfx.js';
+
 const Recorder = (() => {
   let stream = null, analyser = null, timeBuf = null;
   let mediaRecorder = null, chunks = [];
