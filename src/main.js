@@ -4,6 +4,7 @@ import { Evaluate } from './shared/evaluate.js';
 import { Recorder } from './shared/recorder.js';
 import { Sfx } from './shared/sfx.js';
 import { createMarketScene } from './scene/market.js';
+import { createAtmosphere } from './scene/atmosphere.js';
 import { createPerson, updatePerson, PERSON_HEIGHT } from './scene/people.js';
 import { AMBIENT_NPCS, BLOOM_SHOPKEEPER, poseAmbientAt } from './sim/ambient.js';
 import { LOOP_SECONDS, poseAt } from './sim/markRoute.js';
@@ -77,6 +78,10 @@ updatePerson(shopkeeper, {
   heading: BLOOM_SHOPKEEPER.heading,
   animation: 'gesture',
 }, 0);
+const atmosphere = createAtmosphere({
+  renderer, scene, market,
+  people: [mark, ...ambientPeople.map(({ object }) => object), shopkeeper],
+});
 
 let missionLedger = createLedger();
 const missionNotebook = createNotebook({ ledgerConfig: missionLedger.config() });
@@ -205,6 +210,7 @@ function updateWorld() {
     segmentProgress: markState.segmentProgress,
   }, missionTime);
   market.update(missionTime);
+  atmosphere.update();
   return markState;
 }
 

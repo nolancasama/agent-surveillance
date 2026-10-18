@@ -33,11 +33,12 @@ for (let i = 0; i < drapedSkirt.attributes.position.count; i++) {
 }
 drapedSkirt.computeVertexNormals();
 G.drapedSkirt = drapedSkirt;
-function material(color) {
-  if (!MATERIALS.has(color)) MATERIALS.set(color, new THREE.MeshLambertMaterial(
-    color === 'vertex' ? { vertexColors: true } : { color },
-  ));
-  return MATERIALS.get(color);
+function material(color, unlit = false) {
+  const key = unlit ? `unlit:${color}` : color;
+  if (!MATERIALS.has(key)) MATERIALS.set(key, unlit
+    ? new THREE.MeshBasicMaterial({ color })
+    : new THREE.MeshLambertMaterial(color === 'vertex' ? { vertexColors: true } : { color }));
+  return MATERIALS.get(key);
 }
 const part = (geometry, color, position = [0, 0, 0], scale = [1, 1, 1], rotation = [0, 0, 0]) =>
   ({ geometry, color, position, scale, rotation });
@@ -205,7 +206,7 @@ export function createPerson(options = {}) {
     part(G.round, options.bagColor || '#eaa751', [0, -.23, 0], [.29, .33, .16]),
     part(G.torus, '#946642', [0, -.035, 0], [.09, .10, .5]),
   ]); leftArm.end.add(shoppingBag);
-  const waterStream = new THREE.InstancedMesh(G.sphere, material('#a5edff'), 18);
+  const waterStream = new THREE.InstancedMesh(G.sphere, material('#b6f2ff', true), 24);
   waterStream.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   waterStream.frustumCulled = false;
   person.add(waterStream);
@@ -274,7 +275,9 @@ export function updatePerson(person, state = {}, time = 0) {
   const smell = ['smell_flowers', 'bend', 'straighten'].includes(action);
   const buy = ['buy_flowers', 'pay', 'receive', 'hold_up'].includes(action);
   const sitting = ['sit', 'sit_phone', 'sit_down', 'stand_up'].includes(action);
-  if (r.activeSkirt) r.hips.geometry = walk || ride || sitting ? r.activeSkirt : r.neutralSkirt;
+  // The long-hair decoy's walking hem stays centred on her hip pivot.
+  const walkingDrape = walk && person.userData.personId !== 'orange_long_hair';
+  if (r.activeSkirt) r.hips.geometry = walkingDrape || ride || sitting ? r.activeSkirt : r.neutralSkirt;
   let sit = sitting ? 1 : 0;
   if (action === 'sit_down') sit = smooth(0, .16, progress);
   if (action === 'stand_up') sit = 1 - smooth(.88, 1, progress);
@@ -308,6 +311,7 @@ export function updatePerson(person, state = {}, time = 0) {
   r.wateringCan.visible = water || enabled(props, 'watering_can');
   r.phone.visible = enabled(props, 'phone') || action.includes('phone');
   r.shoppingBag.visible = enabled(props, 'bag') || enabled(props, 'shoppingBag') || action === 'shopping_bag';
+  // Pour continuously while the can is raised; lift/lower phases stay dry.
   r.waterStream.visible = water && (progress >= .22 && progress < .82);
   r.bike.visible = ride || action === 'push_bike' || enabled(props, 'bike');
   r.scooter.visible = scooter || enabled(props, 'scooter');
@@ -405,12 +409,14 @@ export function updatePerson(person, state = {}, time = 0) {
     person.updateMatrixWorld(true);
     const tip = r.wateringCan.localToWorld(r.wateringCan.userData.spoutTip.clone());
     person.worldToLocal(tip);
-    // World-down droplets originate at the transformed nozzle and land on the bed.
-    for (let i = 0; i < 18; i++) {
-      const f = ((i / 18 + phase * .85) % 1);
-      dummy.position.set(tip.x + Math.sin(i * 4) * .035 * f,
+    // Overlapping bright droplets keep the whole nozzle-to-soil stream readable.
+    // Animate their small lateral ripple without opening gaps along the fall.
+    for (let i = 0; i < r.waterStream.count; i++) {
+      const f = (i + .5) / r.waterStream.count;
+      dummy.position.set(tip.x + Math.sin(i * .9 - phase * 12) * .012 * f,
         THREE.MathUtils.lerp(tip.y, .68, f), tip.z + f * .06);
-      dummy.scale.set(.018, .055, .018); dummy.updateMatrix();
+      dummy.scale.set(.032, Math.max(.04, Math.abs(tip.y - .68) / r.waterStream.count * .75), .032);
+      dummy.updateMatrix();
       r.waterStream.setMatrixAt(i, dummy.matrix);
     }
     r.waterStream.instanceMatrix.needsUpdate = true;

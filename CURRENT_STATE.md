@@ -13,6 +13,10 @@ Lily uses 13 visible meshes normally and 20 with her bicycle/basket flowers. Mat
 
 The shutter remains disabled until the revealed scene has rendered a full-opacity frame. Test-only controls remain exposed as `window.__surv` only when the URL includes `?test`.
 
+Graphics slice B (2026-10-18) adds varied shop roofs, framed recessed windows and doors, scalloped striped awnings, readable canvas signs and individual shop displays. The environment now has instanced layered trees, petalled flowers with leaves, café umbrellas/chairs, slatted benches with armrests, a tiered fountain, upright bike hoops, patterned paving, path edging, lamps, planters and bins. Shop body dimensions/positions and all eight building-only visibility occluders are preserved; the fountain retains its previous upper height for the bike lap. Lily's watering stream is brighter, thicker and continuous while pouring, and the long-hair decoy walks with a symmetric skirt centred on her hips.
+
+Warm hemisphere/directional lighting, explicit sRGB output with NoToneMapping, a sky gradient and distance fog preserve Lily's distinctive palette. Opaque instanced radial contact shadows and baked building-base shading use no shadow map or post-processing. Static details are merged by landmark; trees and skyline roofs are instanced. Slice B matched counts: wide **443 -> 241 draw calls, 72,068 -> 162,936 triangles**; Lily close-up **110 -> 47 calls, 11,886 -> 67,068 triangles**. Both wide-view budgets are met; pixel ratio remains capped at 1.5. Close-up triangle counts reflect larger merged assemblies surviving culling.
+
 ## Run
 
 - `npm run dev` — local development server
@@ -21,6 +25,10 @@ The shutter remains disabled until the revealed scene has rendered a full-opacit
 - `npm run test:e2e` — Playwright acceptance test against an existing `dist/` build; screenshots go to `.shots/`
 
 ## Known gaps
+
+- Lily's thigh still clips through the skirt at some pedal phases (for example t=160 and t=162). This is also visible in the accepted slice A `.shots/gfx-after/ride-three-quarter.png`; slice B preserves that rig under the two-fix character constraint. Matched evidence views remain readable.
+
+- Slice B verification passed: `npm test` (27/27) and `npm run build`. All 23 requested matched views and renderer metrics are in `.shots/gfx-b-before/` and `.shots/gfx-b-after/`; extra after frames show sustained watering, backpack/phone and the bike lap. `.shots/capture-gfx-b.cjs` repeats the captures against dist with the supplied Playwright NODE_PATH and SwiftShader. Focused photo checks recognise smell/buy/water/ride and retain weak pushing; the audit confirms eight real-building occluders. Browser page errors: none. No full e2e/smoke/browser suite was run for this slice. Claude's final aesthetic review and Chromebook frame-rate measurement remain pending.
 
 - No Agent Briefing import UI or external integration is included; `exportMission(ledger, notebook)` supplies the pure JSON-serialisable boundary.
 - Graphics slice A verification passed: `npm test` (27 tests), `npm run build`, and `npm run test:e2e` using `NODE_PATH=C:/Users/nolan/recipe-tester/node_modules`. The e2e run includes identification, evidence thumbnails, notebook pause/notes, deduction and report screenshots. Matched baseline/after captures, exact camera/time setups and renderer metrics are saved in `.shots/gfx-before/` and `.shots/gfx-after/`; extra after frames cover phone, talk, walking/backpack, watering phases and pedalling. `.shots/capture-gfx.cjs` repeats the screenshot pass with SwiftShader. Browser errors: none. Final aesthetic review by Claude and Chromebook frame-rate measurement remain pending.
