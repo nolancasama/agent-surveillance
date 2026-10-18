@@ -4,7 +4,7 @@ import { Evaluate } from './shared/evaluate.js';
 import { Recorder } from './shared/recorder.js';
 import { Sfx } from './shared/sfx.js';
 import { createMarketScene } from './scene/market.js';
-import { createPerson, updatePerson } from './scene/people.js';
+import { createPerson, updatePerson, PERSON_HEIGHT } from './scene/people.js';
 import { AMBIENT_NPCS, BLOOM_SHOPKEEPER, poseAmbientAt } from './sim/ambient.js';
 import { LOOP_SECONDS, poseAt } from './sim/markRoute.js';
 import { createTelephoto } from './camera/telephoto.js';
@@ -38,6 +38,8 @@ renderer.setClearColor('#a8c4cf');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 180);
 const market = createMarketScene(scene);
+// The redesigned can is authored at its handle grip, with the body below it.
+market.props.wateringCan.position.y = 1.09;
 
 const mark = createPerson({ id: 'lily', name: 'Lily' });
 mark.name = 'mark-lily';
@@ -53,7 +55,9 @@ function personOptions(npc) {
     shirt: appearance.shirt,
     bottoms: appearance.bottom,
     hair: appearance.hairColor,
-    hairStyle: appearance.hair === 'bob' ? 'long' : appearance.hair,
+    hairStyle: npc.id === 'scooter_rider' ? 'cap' : npc.id === 'lawn_walker' ? 'ponytail' : appearance.hair,
+    shorts: npc.id === 'scooter_rider',
+    jacket: npc.id === 'music_shopper' ? '#304879' : null,
     skirt: npc.id === 'orange_long_hair',
   };
 }
@@ -173,7 +177,7 @@ window.addEventListener('resize', resize);
 function markRenderPose() {
   const state = poseAt(missionTime);
   const evidenceAnimation = state.eventId && !state.weak ? state.eventId : state.animation;
-  return { ...state, animation: evidenceAnimation, height: 2.1, occluders: market.occluders };
+  return { ...state, animation: evidenceAnimation, height: PERSON_HEIGHT, occluders: market.occluders };
 }
 
 function updateWorld() {
@@ -197,7 +201,8 @@ function updateWorld() {
   updatePerson(shopkeeper, {
     position: BLOOM_SHOPKEEPER.position,
     heading: 0,
-    animation: markState.eventId === 'buy_flowers' ? 'gesture' : 'idle',
+    animation: markState.eventId === 'buy_flowers' ? 'sell_flowers' : 'idle',
+    segmentProgress: markState.segmentProgress,
   }, missionTime);
   market.update(missionTime);
   return markState;
@@ -267,9 +272,9 @@ function peopleInScene() {
   return [
     { id: 'lily', state: markRenderPose() },
     ...ambientPeople.map(({ npc, object }) => ({ id: npc.id, state: {
-      ...poseAmbientAt(npc, missionTime), height: 2.1, visible: object.visible,
+      ...poseAmbientAt(npc, missionTime), height: PERSON_HEIGHT, visible: object.visible,
     } })),
-    { id: BLOOM_SHOPKEEPER.id, state: { position: BLOOM_SHOPKEEPER.position, height: 2.1 } },
+    { id: BLOOM_SHOPKEEPER.id, state: { position: BLOOM_SHOPKEEPER.position, height: PERSON_HEIGHT } },
   ];
 }
 

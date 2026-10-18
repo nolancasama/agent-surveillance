@@ -1,528 +1,429 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { createBouquet, createWateringCan, createBike, createScooter } from './personProps.js';
 
-// Geometry and material caches are module-wide so all of the market's people use
-// the same GPU resources. Character colour is still configurable per instance.
-const GEOMETRY = Object.freeze({
-  head: new THREE.SphereGeometry(0.19, 10, 8),
-  torso: new THREE.BoxGeometry(0.42, 0.58, 0.24),
-  limb: new THREE.BoxGeometry(0.13, 0.58, 0.14),
-  hairCap: new THREE.SphereGeometry(0.205, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.43),
-  hairLong: new THREE.BoxGeometry(0.36, 0.42, 0.12),
-  hairSide: new THREE.BoxGeometry(0.08, 0.34, 0.18),
-  hairBun: new THREE.SphereGeometry(0.12, 8, 6),
-  eye: new THREE.SphereGeometry(0.026, 7, 5),
-  mouth: new THREE.BoxGeometry(0.075, 0.018, 0.018),
-  hand: new THREE.SphereGeometry(0.075, 7, 6),
-  shoe: new THREE.BoxGeometry(0.16, 0.1, 0.27),
-  skirt: new THREE.CylinderGeometry(0.27, 0.36, 0.46, 8),
-  ribbon: new THREE.BoxGeometry(0.16, 0.08, 0.05),
-  backpack: new THREE.BoxGeometry(0.31, 0.4, 0.15),
-  phone: new THREE.BoxGeometry(0.1, 0.17, 0.025),
-  bag: new THREE.BoxGeometry(0.3, 0.34, 0.12),
-  stem: new THREE.CylinderGeometry(0.018, 0.018, 0.42, 6),
-  flower: new THREE.SphereGeometry(0.09, 7, 5),
-  canBody: new THREE.CylinderGeometry(0.17, 0.19, 0.3, 8),
-  canSpout: new THREE.CylinderGeometry(0.045, 0.075, 0.46, 7),
-  canHandle: new THREE.TorusGeometry(0.18, 0.03, 6, 12, Math.PI),
-  waterDrop: new THREE.CylinderGeometry(0.026, 0.026, 0.2, 5),
-  wheel: new THREE.TorusGeometry(0.38, 0.035, 6, 18),
-  spoke: new THREE.BoxGeometry(0.018, 0.68, 0.018),
-  hub: new THREE.CylinderGeometry(0.035, 0.035, 0.12, 7),
-  tube: new THREE.CylinderGeometry(0.035, 0.035, 1, 7),
-  thinTube: new THREE.CylinderGeometry(0.025, 0.025, 1, 7),
-  basket: new THREE.BoxGeometry(0.34, 0.22, 0.3),
-  bikeSeat: new THREE.BoxGeometry(0.18, 0.07, 0.28),
-  handlebar: new THREE.CylinderGeometry(0.025, 0.025, 0.44, 7),
-  scooterDeck: new THREE.BoxGeometry(0.22, 0.08, 0.75),
-  scooterStem: new THREE.CylinderGeometry(0.025, 0.025, 0.9, 7),
-  scooterBar: new THREE.CylinderGeometry(0.025, 0.025, 0.42, 7),
-  scooterWheel: new THREE.TorusGeometry(0.1, 0.025, 5, 12),
-});
-
+export { createBouquet, createWateringCan, createBike, createScooter };
+// Measured neutral silhouette, including the hair crown. Shared with projection.
+export const PERSON_HEIGHT = 2.09;
+export const PERSON_TORSO = 1.24;
+const G = {
+  sphere: new THREE.SphereGeometry(1, 8, 5),
+  head: new THREE.SphereGeometry(1, 12, 8),
+  round: new RoundedBoxGeometry(1, 1, 1, 1, 0.16),
+  torso: new THREE.LatheGeometry([
+    new THREE.Vector2(.20, -.28), new THREE.Vector2(.23, -.24),
+    new THREE.Vector2(.25, .13), new THREE.Vector2(.23, .23),
+    new THREE.Vector2(.15, .28), new THREE.Vector2(0, .28),
+  ], 12),
+  skirt: new THREE.CylinderGeometry(.235, .35, .34, 12),
+  capsule: new THREE.CapsuleGeometry(1, 1, 3, 8),
+  cap: new THREE.SphereGeometry(1, 12, 7, 0, Math.PI * 2, 0, Math.PI * .43),
+  tube: new THREE.CylinderGeometry(1, 1, 1, 8),
+  torus: new THREE.TorusGeometry(1, .13, 5, 12),
+};
 const MATERIALS = new Map();
+const COMPOSITES = new Map();
+// A draped front hem covers bent thighs while preserving the fitted waist.
+const drapedSkirt = new THREE.CylinderGeometry(.235, .35, .34, 12, 3);
+for (let i = 0; i < drapedSkirt.attributes.position.count; i++) {
+  const positions = drapedSkirt.attributes.position;
+  const z = positions.getZ(i);
+  if (z > 0) positions.setZ(i, z * (1 + (.17 - positions.getY(i)) / .34));
+}
+drapedSkirt.computeVertexNormals();
+G.drapedSkirt = drapedSkirt;
+function material(color) {
+  if (!MATERIALS.has(color)) MATERIALS.set(color, new THREE.MeshLambertMaterial(
+    color === 'vertex' ? { vertexColors: true } : { color },
+  ));
+  return MATERIALS.get(color);
+}
+const part = (geometry, color, position = [0, 0, 0], scale = [1, 1, 1], rotation = [0, 0, 0]) =>
+  ({ geometry, color, position, scale, rotation });
 
-function material(color, options = {}) {
-  const key = `${color}:${options.transparent ? options.opacity ?? 1 : 1}`;
-  if (!MATERIALS.has(key)) {
-    MATERIALS.set(key, new THREE.MeshLambertMaterial({
-      color,
-      transparent: Boolean(options.transparent),
-      opacity: options.opacity ?? 1,
-      depthWrite: options.depthWrite ?? true,
-    }));
+// All the face/hair pieces and fixed clothing details are one draw per assembly.
+function combined(key, parts) {
+  if (!COMPOSITES.has(key)) {
+    const geometries = parts.map(p => {
+      const geometry = p.geometry.index ? p.geometry.toNonIndexed() : p.geometry.clone();
+      geometry.deleteAttribute('uv');
+      const transform = new THREE.Matrix4().compose(
+        new THREE.Vector3(...p.position),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(...p.rotation)),
+        new THREE.Vector3(...p.scale),
+      );
+      geometry.applyMatrix4(transform);
+      const color = new THREE.Color(p.color);
+      const colors = new Float32Array(geometry.attributes.position.count * 3);
+      for (let i = 0; i < colors.length; i += 3) color.toArray(colors, i);
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      return geometry;
+    });
+    const merged = mergeGeometries(geometries);
+    geometries.forEach(g => g.dispose());
+    COMPOSITES.set(key, merged);
   }
-  return MATERIALS.get(key);
+  return new THREE.Mesh(COMPOSITES.get(key), material('vertex'));
+}
+function ellipsoid(color, position, scale, rotation) {
+  return part(G.sphere, color, position, scale, rotation);
+}
+function capsule(color, length, radius, centre = [0, -length / 2, 0]) {
+  // Unit capsule is three units long; shrink its caps without shortening the chain.
+  const geometryKey = `capsule:${length}:${radius}`;
+  if (!COMPOSITES.has(geometryKey)) COMPOSITES.set(geometryKey,
+    new THREE.CapsuleGeometry(radius, Math.max(.01, length - 2 * radius), 3, 8));
+  return part(COMPOSITES.get(geometryKey), color, centre);
 }
 
-function mesh(geometry, color, name) {
-  const result = new THREE.Mesh(geometry, material(color));
-  result.name = name;
-  return result;
-}
-
-function limb(color, skin, shoeColor, isLeg = false) {
-  const pivot = new THREE.Group();
-  const segment = mesh(GEOMETRY.limb, color, isLeg ? 'leg' : 'arm');
-  segment.position.y = -0.29;
-  pivot.add(segment);
-  const end = mesh(isLeg ? GEOMETRY.shoe : GEOMETRY.hand, isLeg ? shoeColor : skin, isLeg ? 'shoe' : 'hand');
-  end.position.set(0, isLeg ? -0.62 : -0.61, isLeg ? 0.065 : 0);
-  pivot.add(end);
-  return pivot;
-}
-
-function cylinderBetween(a, b, color, radius = 0.035) {
-  const delta = new THREE.Vector3().subVectors(b, a);
-  const tube = new THREE.Mesh(
-    radius === 0.035 ? GEOMETRY.tube : GEOMETRY.thinTube,
-    material(color),
-  );
-  tube.position.copy(a).addScaledVector(delta, 0.5);
-  tube.scale.y = delta.length();
-  tube.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), delta.normalize());
-  return tube;
-}
-
-export function createBouquet() {
-  const bouquet = new THREE.Group();
-  bouquet.name = 'bouquet';
-  const colours = ['#f44362', '#ffbd3f', '#f8f1df', '#bd65df', '#ff765c'];
-  for (let i = 0; i < 7; i += 1) {
-    const angle = (i / 7) * Math.PI * 2;
-    const stem = mesh(GEOMETRY.stem, '#3f8f4e', 'flower-stem');
-    stem.position.set(Math.cos(angle) * 0.055, 0, Math.sin(angle) * 0.055);
-    stem.rotation.z = Math.cos(angle) * 0.12;
-    bouquet.add(stem);
-    const bloom = mesh(GEOMETRY.flower, colours[i % colours.length], 'flower-bloom');
-    bloom.position.set(Math.cos(angle) * 0.1, 0.23 + (i % 2) * 0.04, Math.sin(angle) * 0.1);
-    bouquet.add(bloom);
-  }
-  bouquet.rotation.z = -0.25;
-  bouquet.userData.isBouquet = true;
-  return bouquet;
-}
-
-export function createWateringCan() {
-  const can = new THREE.Group();
-  can.name = 'watering-can';
-  const body = mesh(GEOMETRY.canBody, '#55d4e8', 'watering-can-body');
-  body.rotation.z = Math.PI / 2;
-  can.add(body);
-  const spout = mesh(GEOMETRY.canSpout, '#55d4e8', 'watering-can-spout');
-  spout.position.set(0.36, 0.05, 0);
-  spout.rotation.z = -Math.PI / 2.8;
-  can.add(spout);
-  const handle = new THREE.Mesh(GEOMETRY.canHandle, material('#32a9c1'));
-  handle.position.y = 0.16;
-  can.add(handle);
-
-  const stream = new THREE.Group();
-  stream.name = 'water-stream';
-  stream.position.set(0.62, -0.1, 0);
-  for (let i = 0; i < 9; i += 1) {
-    const drop = new THREE.Mesh(GEOMETRY.waterDrop, material('#8be9ff', { transparent: true, opacity: 0.9 }));
-    drop.position.set((i % 3 - 1) * 0.045, -i * 0.13, (i % 2) * 0.04);
-    stream.add(drop);
-  }
-  stream.visible = false;
-  can.add(stream);
-  can.userData.stream = stream;
-  return can;
-}
-
-export function createBike({ color = '#d94a52', basket = true } = {}) {
-  const bike = new THREE.Group();
-  bike.name = 'bike';
-  const wheels = [];
-  for (const z of [-0.72, 0.72]) {
-    const wheel = mesh(GEOMETRY.wheel, '#242c34', 'bike-wheel');
-    wheel.position.set(0, 0.39, z);
-    wheel.rotation.y = Math.PI / 2;
-    for (let spokeIndex = 0; spokeIndex < 3; spokeIndex += 1) {
-      const spoke = mesh(GEOMETRY.spoke, '#aab5ba', 'bike-spoke');
-      spoke.rotation.z = spokeIndex * Math.PI / 3;
-      wheel.add(spoke);
-    }
-    bike.add(wheel);
-    const hub = mesh(GEOMETRY.hub, '#c9d1d5', 'bike-hub');
-    hub.position.copy(wheel.position);
-    hub.rotation.z = Math.PI / 2;
-    bike.add(hub);
-    wheels.push(wheel);
-  }
-  const rear = new THREE.Vector3(0, 0.39, 0.72);
-  const front = new THREE.Vector3(0, 0.39, -0.72);
-  const crank = new THREE.Vector3(0, 0.48, 0.12);
-  const seat = new THREE.Vector3(0, 0.9, 0.34);
-  const bars = new THREE.Vector3(0, 0.94, -0.58);
-  bike.add(
-    cylinderBetween(rear, crank, color), cylinderBetween(front, crank, color),
-    cylinderBetween(crank, seat, color), cylinderBetween(seat, rear, color),
-    cylinderBetween(seat, front, color), cylinderBetween(front, bars, '#66727a', 0.025),
-  );
-  const saddle = mesh(GEOMETRY.bikeSeat, '#332b28', 'bike-seat');
-  saddle.position.copy(seat);
-  bike.add(saddle);
-  const handlebar = mesh(GEOMETRY.handlebar, '#66727a', 'bike-handlebar');
-  handlebar.position.copy(bars);
-  handlebar.rotation.z = Math.PI / 2;
-  bike.add(handlebar);
-  if (basket) {
-    const basketMesh = mesh(GEOMETRY.basket, '#9b6b3f', 'bike-basket');
-    basketMesh.position.set(0, 0.83, -0.78);
-    bike.add(basketMesh);
-    bike.userData.basket = basketMesh;
-    const basketBouquet = createBouquet();
-    basketBouquet.name = 'basket-bouquet';
-    basketBouquet.scale.setScalar(0.48);
-    basketBouquet.position.set(0, 0.98, -0.78);
-    basketBouquet.rotation.z = 0;
-    basketBouquet.visible = false;
-    bike.add(basketBouquet);
-    bike.userData.basketBouquet = basketBouquet;
-  }
-  bike.userData.wheels = wheels;
-  bike.userData.spin = (distance) => {
-    for (const wheel of wheels) wheel.rotation.x = distance / 0.38;
-  };
-  return bike;
-}
-
-export function createScooter({ color = '#37b7d8' } = {}) {
-  const scooter = new THREE.Group();
-  scooter.name = 'scooter';
-  scooter.add(mesh(GEOMETRY.scooterDeck, color, 'scooter-deck'));
-  const stem = mesh(GEOMETRY.scooterStem, '#65727b', 'scooter-stem');
-  stem.position.set(0, 0.46, -0.31);
-  stem.rotation.x = -0.08;
-  scooter.add(stem);
-  const bar = mesh(GEOMETRY.scooterBar, '#65727b', 'scooter-bar');
-  bar.position.set(0, 0.89, -0.35);
-  bar.rotation.z = Math.PI / 2;
-  scooter.add(bar);
-  const wheels = [];
-  for (const z of [-0.3, 0.3]) {
-    const wheel = mesh(GEOMETRY.scooterWheel, '#242c34', 'scooter-wheel');
-    wheel.position.set(0, -0.02, z);
-    wheel.rotation.y = Math.PI / 2;
-    scooter.add(wheel);
-    wheels.push(wheel);
-  }
-  scooter.userData.wheels = wheels;
-  return scooter;
-}
-
-const PERSON_DEFAULTS = Object.freeze({
-  skin: '#c98d68',
-  shirt: '#4f93c5',
-  bottoms: '#42556b',
-  shoes: '#333941',
-  hair: '#3b2a22',
-  hairStyle: 'short',
-  skirt: false,
-  ribbon: null,
-  backpack: null,
-});
-
+const DEFAULTS = {
+  skin: '#d7a17d', shirt: '#4f93c5', bottoms: '#42556b', shoes: '#3b3c50',
+  hair: '#3b2a22', hairStyle: 'short', skirt: false, ribbon: null, backpack: null,
+};
 export const LILY_APPEARANCE = Object.freeze({
-  shirt: '#f4c518',
-  bottoms: '#3972b7',
-  skirt: true,
-  hair: '#241a12',
-  hairStyle: 'long',
-  ribbon: '#d94a52',
-  backpack: '#3eaf72',
+  skin: '#f2c39c', shirt: '#f4c518', bottoms: '#3972b7', skirt: true,
+  hair: '#241a12', hairStyle: 'long', ribbon: '#e74451', backpack: '#3eaf72',
 });
+
+function createHead(c) {
+  const pieces = [part(G.head, c.skin, [0, 0, 0], [.255, .275, .225]),
+    part(G.cap, c.hair, [0, .03, -.025], [.274, .28, .25])];
+  for (const side of [-1, 1]) {
+    pieces.push(ellipsoid(c.skin, [side * .247, -.015, 0], [.047, .068, .048]));
+    pieces.push(ellipsoid('#fff8e9', [side * .089, .013, .205], [.061, .074, .026]));
+    pieces.push(ellipsoid('#493226', [side * .084, .009, .228], [.036, .048, .013]));
+    pieces.push(ellipsoid('#171b27', [side * .084, .012, .239], [.022, .032, .008]));
+    pieces.push(ellipsoid('#ffffff', [side * .084 - .01, .032, .246], [.012, .014, .006]));
+    pieces.push(ellipsoid(c.hair, [side * .09, .112, .208], [.064, .013, .017], [0, 0, side * -.12]));
+    pieces.push(ellipsoid('#e99c8c', [side * .158, -.068, .183], [.045, .022, .012]));
+  }
+  pieces.push(ellipsoid(c.skin, [0, -.047, .223], [.029, .036, .032]));
+  pieces.push(ellipsoid('#9e5354', [0, -.123, .199], [.057, .023, .014]));
+  pieces.push(ellipsoid('#fff1df', [0, -.113, .208], [.038, .008, .006]));
+  // Swept fringe leaves both eyes clear on +z, with no full hair shell over the face.
+  const style = c.hairStyle;
+  if (style !== 'cap') {
+    pieces.push(ellipsoid(c.hair, [-.12, .17, .12], [.14, .09, .11], [0, 0, -.48]));
+    pieces.push(ellipsoid(c.hair, [.16, .14, .09], [.09, .12, .12], [0, 0, .3]));
+  }
+  if (['long', 'bob', 'ponytail', 'bun'].includes(style)) {
+    const long = style === 'long';
+    pieces.push(ellipsoid(c.hair, [0, .03, -.165], [.25, .19, .13]));
+    // Two side locks frame the face; the back ends above the backpack's top.
+    pieces.push(ellipsoid(c.hair, [0, long ? -.14 : -.10, -.15], [.25, long ? .24 : .23, .12]));
+    for (const side of [-1, 1]) pieces.push(ellipsoid(c.hair,
+      [side * .222, long ? -.22 : -.12, -.025], [.069, long ? .34 : .23, .14], [0, 0, side * .05]));
+    if (style === 'ponytail' || style === 'bun') {
+      pieces.push(ellipsoid(c.hair, [0, .02, -.32], [.13, style === 'bun' ? .14 : .29, .14]));
+    }
+  } else if (style === 'curly' || style === 'spiky') {
+    for (let i = 0; i < 7; i++) {
+      const a = i * Math.PI * 2 / 7;
+      pieces.push(ellipsoid(c.hair, [Math.cos(a) * .19, .19 + (i % 2) * .025, Math.sin(a) * .16], [.10, .11, .10]));
+    }
+  } else if (style === 'cap') {
+    pieces.push(part(G.cap, c.shirt, [0, .06, -.02], [.285, .29, .26]));
+    pieces.push(ellipsoid(c.shirt, [0, .13, .23], [.27, .035, .17]));
+  }
+  if (c.ribbon) {
+    for (const side of [-1, 1]) pieces.push(ellipsoid(c.ribbon,
+      [.24 + side * .045, .08 + side * .025, -.025], [.065, .055, .028], [0, 0, side * .5]));
+    pieces.push(ellipsoid(c.ribbon, [.24, .08, .005], [.025, .032, .027]));
+  }
+  const head = combined(`head:${c.skin}:${c.hair}:${style}:${c.ribbon}:${c.shirt}`, pieces);
+  head.name = 'face-and-hair';
+  return head;
+}
+
+function chain(c, isLeg, side) {
+  const upper = new THREE.Group();
+  const lower = new THREE.Group();
+  const end = new THREE.Group();
+  const a = isLeg ? .43 : .31;
+  const b = isLeg ? .40 : .30;
+  const upperColor = isLeg ? (c.skirt ? c.skin : c.bottoms) : c.shirt;
+  const lowerColor = isLeg && !c.skirt && !c.shorts ? c.bottoms : c.skin;
+  const upperParts = [capsule(upperColor, a + .06, isLeg ? .092 : .081, [0, -a / 2, 0])];
+  if (!isLeg) upperParts.push(capsule(c.skin, .14, .067, [0, -a + .025, 0]));
+  upper.add(combined(`upper:${upperColor}:${c.skin}:${isLeg}`, upperParts));
+  const lowerParts = [capsule(lowerColor, b + .05, isLeg ? .075 : .06, [0, -b / 2, 0])];
+  if (!isLeg) lowerParts.push(ellipsoid(c.skin, [0, -b, .012], [.071, .083, .062]));
+  lower.add(combined(`lower:${lowerColor}:${isLeg}`, lowerParts));
+  if (isLeg) end.add(combined(`shoe:${c.shoes}`, [
+    part(G.round, c.shoes, [0, -.025, .055], [.18, .13, .30]),
+    part(G.round, '#efe3cc', [0, -.077, .06], [.183, .037, .30]),
+    part(G.round, '#fff0da', [0, .028, .06], [.085, .016, .08]),
+  ]));
+  lower.position.y = -a;
+  end.position.y = -b;
+  upper.add(lower);
+  lower.add(end);
+  upper.name = `${side < 0 ? 'left' : 'right'}-${isLeg ? 'leg' : 'arm'}`;
+  return { upper, lower, end, a, b, side };
+}
 
 export function createPerson(options = {}) {
-  const isLily = options.id === 'lily' || options.name?.toLowerCase() === 'lily';
-  const config = { ...PERSON_DEFAULTS, ...(isLily ? LILY_APPEARANCE : {}), ...options };
+  const lily = options.id === 'lily' || options.name?.toLowerCase() === 'lily';
+  const c = { ...DEFAULTS, ...(lily ? LILY_APPEARANCE : {}), ...options };
   const person = new THREE.Group();
   person.name = options.name || options.id || 'person';
-
+  const pelvis = new THREE.Group(); pelvis.position.y = .92;
   const body = new THREE.Group();
-  body.name = 'upper-body';
-  person.add(body);
-  const torso = mesh(GEOMETRY.torso, config.shirt, 'torso');
-  torso.position.y = 1.2;
-  body.add(torso);
-  const head = mesh(GEOMETRY.head, config.skin, 'head');
-  head.position.y = 1.7;
-  body.add(head);
-
-  const hairCap = mesh(GEOMETRY.hairCap, config.hair, 'hair');
-  hairCap.position.set(0, 1.72, -0.005);
-  hairCap.rotation.x = -0.08;
-  body.add(hairCap);
-  if (config.hairStyle === 'long') {
-    const longHair = mesh(GEOMETRY.hairLong, config.hair, 'long-hair');
-    longHair.position.set(0, 1.51, -0.145);
-    const leftHair = mesh(GEOMETRY.hairSide, config.hair, 'left-hair');
-    const rightHair = mesh(GEOMETRY.hairSide, config.hair, 'right-hair');
-    leftHair.position.set(-0.17, 1.57, -0.02);
-    rightHair.position.set(0.17, 1.57, -0.02);
-    body.add(longHair, leftHair, rightHair);
-  } else if (config.hairStyle === 'bun') {
-    const bun = mesh(GEOMETRY.hairBun, config.hair, 'hair-bun');
-    bun.position.set(0, 1.83, -0.14);
-    body.add(bun);
+  pelvis.add(body); person.add(pelvis);
+  const torsoPieces = [part(G.torso, c.shirt, [0, .32, 0], [1, 1, .70]),
+    capsule(c.skin, .14, .083, [0, .66, 0]),
+    ellipsoid(c.shirt, [-.23, .52, 0], [.10, .10, .12]),
+    ellipsoid(c.shirt, [.23, .52, 0], [.10, .10, .12])];
+  if (c.jacket) for (const side of [-1, 1]) torsoPieces.push(part(G.round, c.jacket,
+    [side * .13, .33, .115], [.20, .51, .07]));
+  if (c.backpack) {
+    torsoPieces.push(part(G.round, c.backpack, [0, .28, -.255], [.34, .38, .20]));
+    torsoPieces.push(part(G.round, '#28764e', [0, .20, -.365], [.25, .15, .04]));
+    for (const side of [-1, 1]) torsoPieces.push(part(G.round, c.backpack,
+      [side * .15, .37, .16], [.045, .36, .034]));
   }
-
-  // Local +z is the character's forward/walking direction. Keep the face on
-  // that side so route headings and evidence close-ups show the same front.
-  for (const x of [-0.065, 0.065]) {
-    const eye = mesh(GEOMETRY.eye, '#302824', 'eye');
-    eye.position.set(x, 1.72, 0.18);
-    body.add(eye);
-  }
-  const mouth = mesh(GEOMETRY.mouth, '#7b3f43', 'mouth');
-  mouth.position.set(0, 1.645, 0.187);
-  body.add(mouth);
-  if (config.ribbon) {
-    const ribbon = mesh(GEOMETRY.ribbon, config.ribbon, 'hair-ribbon');
-    ribbon.position.set(0.18, 1.78, -0.1);
-    ribbon.rotation.z = -0.4;
-    body.add(ribbon);
-  }
-  if (config.backpack) {
-    const backpack = mesh(GEOMETRY.backpack, config.backpack, 'backpack');
-    backpack.position.set(0, 1.2, -0.2);
-    body.add(backpack);
-  }
-
-  const leftArm = limb(config.shirt, config.skin, config.shoes);
-  const rightArm = limb(config.shirt, config.skin, config.shoes);
-  leftArm.name = 'left-arm';
-  rightArm.name = 'right-arm';
-  leftArm.position.set(-0.28, 1.43, 0);
-  rightArm.position.set(0.28, 1.43, 0);
-  body.add(leftArm, rightArm);
-
-  const legColor = config.bottoms;
-  const leftLeg = limb(legColor, config.skin, config.shoes, true);
-  const rightLeg = limb(legColor, config.skin, config.shoes, true);
-  leftLeg.name = 'left-leg';
-  rightLeg.name = 'right-leg';
-  leftLeg.position.set(-0.12, 0.88, 0);
-  rightLeg.position.set(0.12, 0.88, 0);
-  person.add(leftLeg, rightLeg);
-  let skirt = null;
-  if (config.skirt) {
-    skirt = mesh(GEOMETRY.skirt, legColor, 'skirt');
-    skirt.position.y = 0.91;
-    person.add(skirt);
-  }
-
-  const bouquet = createBouquet();
-  bouquet.position.set(0, -0.67, -0.05);
-  bouquet.scale.setScalar(0.82);
-  bouquet.visible = false;
-  rightArm.add(bouquet);
-  const wateringCan = createWateringCan();
-  wateringCan.position.set(0, -0.68, 0.08);
-  wateringCan.scale.setScalar(1.15);
-  wateringCan.visible = false;
-  rightArm.add(wateringCan);
-  // Keep the stream in person space rather than under the animated arm. That
-  // lets it fall onto the bed while the can itself is held forward at +z.
-  const waterStream = wateringCan.userData.stream;
-  wateringCan.remove(waterStream);
-  waterStream.position.set(0.7, 1.25, 1.1);
+  const torso = combined(`torso:${JSON.stringify(c)}`, torsoPieces); body.add(torso);
+  const hips = combined(`hips:${c.bottoms}:${c.skirt}`, [
+    part(c.skirt ? G.skirt : G.round, c.bottoms, [0, c.skirt ? -.045 : 0, 0], c.skirt ? [1, 1, .88] : [.35, .20, .25]),
+  ]); pelvis.add(hips);
+  const activeSkirt = c.skirt ? combined(`draped-skirt:${c.bottoms}`, [
+    part(G.drapedSkirt, c.bottoms, [0, -.045, 0], [1, 1, .88]),
+  ]).geometry : null;
+  const head = new THREE.Group(); head.position.y = .86; head.add(createHead(c)); body.add(head);
+  const leftArm = chain(c, false, -1), rightArm = chain(c, false, 1);
+  const leftLeg = chain(c, true, -1), rightLeg = chain(c, true, 1);
+  for (const arm of [leftArm, rightArm]) { arm.upper.position.set(arm.side * .30, .56, 0); body.add(arm.upper); }
+  for (const leg of [leftLeg, rightLeg]) { leg.upper.position.x = leg.side * .125; pelvis.add(leg.upper); }
+  const bouquet = createBouquet(); rightArm.end.add(bouquet);
+  const wateringCan = createWateringCan(); rightArm.end.add(wateringCan);
+  const phone = combined('phone', [part(G.round, '#273344', [0, .05, .025], [.12, .21, .028]),
+    part(G.round, '#8cdde2', [0, .055, .043], [.095, .15, .008])]); rightArm.end.add(phone);
+  const money = combined('money', [part(G.round, '#91bb72', [.08, .13, .08], [.23, .13, .018]),
+    ellipsoid('#f4ead5', [.08, .13, .094], [.045, .035, .008])]); rightArm.end.add(money);
+  const shoppingBag = combined(`bag:${options.bagColor}`, [
+    part(G.round, options.bagColor || '#eaa751', [0, -.23, 0], [.29, .33, .16]),
+    part(G.torus, '#946642', [0, -.035, 0], [.09, .10, .5]),
+  ]); leftArm.end.add(shoppingBag);
+  const waterStream = new THREE.InstancedMesh(G.sphere, material('#a5edff'), 18);
+  waterStream.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  waterStream.frustumCulled = false;
   person.add(waterStream);
-  const phone = mesh(GEOMETRY.phone, '#18242f', 'phone');
-  phone.position.set(0, -0.65, -0.09);
-  phone.visible = false;
-  rightArm.add(phone);
-  const shoppingBag = mesh(GEOMETRY.bag, options.bagColor || '#ffbd3f', 'shopping-bag');
-  shoppingBag.position.set(0, -0.78, 0);
-  shoppingBag.visible = false;
-  leftArm.add(shoppingBag);
-
-  const bike = isLily || options.bike || options.vehicle === 'bike'
-    ? createBike({ color: options.bikeColor || '#d94a52' })
-    : new THREE.Group();
-  bike.name = 'bike';
-  bike.visible = false;
-  person.add(bike);
-  const scooter = options.scooter || options.vehicle === 'scooter'
-    ? createScooter({ color: options.scooterColor || '#37b7d8' })
-    : new THREE.Group();
-  scooter.name = 'scooter';
-  scooter.visible = false;
-  scooter.position.x = 0.16;
-  person.add(scooter);
-
-  person.userData.isPerson = true;
-  person.userData.personId = options.id || null;
-  person.userData.rig = {
-    body, torso, head, leftArm, rightArm, leftLeg, rightLeg, skirt,
-    bouquet, wateringCan, waterStream,
-    phone, shoppingBag, bike, scooter,
+  const bike = lily || options.bike ? createBike() : new THREE.Group(); person.add(bike);
+  const scooter = options.scooter ? createScooter() : new THREE.Group(); person.add(scooter);
+  person.userData = { isPerson: true, personId: options.id || null, baseScale: options.scale ?? 1,
+    rig: { pelvis, body, torso, head, leftArm, rightArm, leftLeg, rightLeg, hips,
+      neutralSkirt: hips.geometry, activeSkirt,
+      bouquet, wateringCan, waterStream, phone, money, shoppingBag, bike, scooter },
   };
-  person.userData.baseScale = options.scale ?? 1;
   person.scale.setScalar(person.userData.baseScale);
   person.userData.update = (state, time) => updatePerson(person, state, time);
   person.userData.setPose = person.userData.update;
+  for (const prop of [bouquet, wateringCan, waterStream, phone, money, shoppingBag, bike, scooter]) prop.visible = false;
   return person;
 }
 
-function propEnabled(props, key) {
-  if (Array.isArray(props)) return props.includes(key);
-  if (typeof props === 'string') return props === key;
-  return Boolean(props?.[key]);
+const DOWN = new THREE.Vector3(0, -1, 0);
+const v = new THREE.Vector3(), direction = new THREE.Vector3(), bend = new THREE.Vector3();
+const elbow = new THREE.Vector3(), quaternion = new THREE.Quaternion();
+const transform = new THREE.Matrix4();
+const dummy = new THREE.Object3D();
+function reach(person, limb, target, pole = [0, 0, 1]) {
+  const parent = limb.upper.parent;
+  parent.updateWorldMatrix(true, false);
+  transform.copy(parent.matrixWorld).invert().multiply(person.matrixWorld);
+  v.copy(target).applyMatrix4(transform).sub(limb.upper.position);
+  const distance = THREE.MathUtils.clamp(v.length(), .025, limb.a + limb.b - .001);
+  direction.copy(v).normalize();
+  bend.set(...pole).addScaledVector(direction, -new THREE.Vector3(...pole).dot(direction)).normalize();
+  const along = (limb.a ** 2 - limb.b ** 2 + distance ** 2) / (2 * distance);
+  elbow.copy(direction).multiplyScalar(along).addScaledVector(bend, Math.sqrt(Math.max(0, limb.a ** 2 - along ** 2)));
+  limb.upper.quaternion.setFromUnitVectors(DOWN, elbow.clone().normalize());
+  v.copy(direction).multiplyScalar(distance).sub(elbow).normalize();
+  quaternion.copy(limb.upper.quaternion).invert();
+  v.applyQuaternion(quaternion);
+  limb.lower.quaternion.setFromUnitVectors(DOWN, v);
 }
-
-function resetRig(rig) {
-  rig.body.position.set(0, 0, 0);
-  rig.body.rotation.set(0, 0, 0);
-  rig.head.rotation.set(0, 0, 0);
-  for (const part of [rig.leftArm, rig.rightArm, rig.leftLeg, rig.rightLeg]) {
-    part.rotation.set(0, 0, 0);
-  }
-  rig.bike.position.set(0, 0, 0);
-  rig.bike.rotation.set(0, 0, 0);
-  rig.scooter.position.set(0.16, 0, 0);
-  rig.wateringCan.rotation.set(0, 0, 0);
+function heldLevel(limb, rotation = [0, 0, 0]) {
+  limb.end.quaternion.copy(limb.upper.quaternion).multiply(limb.lower.quaternion).invert();
+  limb.end.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)));
 }
+const smooth = (a, b, t) => THREE.MathUtils.smoothstep(t, a, b);
+const point = (x, y, z) => new THREE.Vector3(x, y, z);
+function enabled(props, name) { return Array.isArray(props) ? props.includes(name) : Boolean(props?.[name]); }
 
-/**
- * Apply a route/ambient pose to a person. The updater deliberately accepts the
- * common field variants used by both simulation modules (animation/action and
- * props/propsHeld), keeping the renderer independent of their data format.
- */
+/** Only consumes sampled states; seeking never changes route or gameplay time. */
 export function updatePerson(person, state = {}, time = 0) {
-  const rig = person.userData.rig;
-  if (!rig) return person;
-  const position = state.position || state.pos;
-  if (position) person.position.set(position.x ?? 0, position.y ?? 0, position.z ?? 0);
+  const r = person.userData.rig;
+  if (!r) return person;
+  const p = state.position || state.pos;
+  if (p) person.position.set(p.x || 0, p.y || 0, p.z || 0);
   if (Number.isFinite(state.heading)) person.rotation.y = state.heading;
-  const rawAction = state.animationState || state.animation || state.action || 'idle';
-  const action = ({
-    smell: 'smell_flowers', buy: 'buy_flowers', water: 'water_flowers',
-    bike_push: 'push_bike', pushBike: 'push_bike', bike_ride: 'ride_bike',
-    rideBike: 'ride_bike', scooter: 'ride_scooter', browse: 'idle',
-    sit_down: 'sit', stand_up: 'sit', check_phone: 'phone',
-  })[rawAction] || rawAction;
-  const props = state.propsHeld || state.heldProps || state.props || {};
+  const raw = state.animationState || state.animation || state.action || 'idle';
+  const action = ({ smell: 'smell_flowers', buy: 'buy_flowers', water: 'water_flowers',
+    bike_push: 'push_bike', bike_ride: 'ride_bike', pedal: 'ride_bike', scooter: 'ride_scooter',
+    check_phone: 'phone', look_phone: 'phone' })[raw] || raw;
+  const props = state.propsHeld || state.heldProps || state.props || [];
+  const progress = state.segmentProgress ?? .5;
   const phase = state.phase ?? time;
-  const swing = Math.sin(phase * 7);
-  resetRig(rig);
-
-  const hasBouquet = propEnabled(props, 'bouquet') || propEnabled(props, 'flowers') || action === 'buy_flowers';
-  const hasCan = propEnabled(props, 'wateringCan') || propEnabled(props, 'watering_can') || action === 'water_flowers';
-  const usesBike = propEnabled(props, 'bike') || ['push_bike', 'ride_bike', 'pedal'].includes(action);
-  const usesScooter = propEnabled(props, 'scooter') || action === 'ride_scooter';
-  if (usesBike && !rig.bike.userData.wheels) {
-    person.remove(rig.bike);
-    rig.bike = createBike({ color: state.bikeColor || '#d94a52' });
-    person.add(rig.bike);
+  const stride = phase * 6;
+  const walk = ['walk', 'carry', 'push_bike', 'shopping_bag'].includes(action);
+  const ride = action === 'ride_bike';
+  const scooter = action === 'ride_scooter';
+  const water = action === 'water_flowers';
+  const smell = ['smell_flowers', 'bend', 'straighten'].includes(action);
+  const buy = ['buy_flowers', 'pay', 'receive', 'hold_up'].includes(action);
+  const sitting = ['sit', 'sit_phone', 'sit_down', 'stand_up'].includes(action);
+  if (r.activeSkirt) r.hips.geometry = walk || ride || sitting ? r.activeSkirt : r.neutralSkirt;
+  let sit = sitting ? 1 : 0;
+  if (action === 'sit_down') sit = smooth(0, .16, progress);
+  if (action === 'stand_up') sit = 1 - smooth(.88, 1, progress);
+  const lean = smell ? .72 * smooth(0, .2, progress) * (1 - smooth(.78, 1, progress))
+    : water ? .17 : ['tie_shoe', 'lock_bike'].includes(action) ? .65 : ride ? .55 : 0;
+  const values = [walk ? .012 * (1 - Math.cos(stride * 2)) : .008 * Math.sin(phase * 2),
+    -.30 * sit + (ride ? .13 : scooter ? .08 : 0), lean,
+    walk ? Math.sin(stride) * .50 : -.05, walk ? -Math.sin(stride) * .50 : -.05,
+    walk ? -Math.sin(stride) * .40 : -1.30 * sit, walk ? Math.sin(stride) * .40 : -1.30 * sit,
+    walk ? Math.max(0, Math.sin(stride)) * .65 : 1.35 * sit,
+    walk ? Math.max(0, -Math.sin(stride)) * .65 : 1.35 * sit];
+  // Blend ordinary consecutive frames; absolute seeks resolve immediately.
+  const dt = time - (r.lastTime ?? -Infinity);
+  if (r.pose && dt >= 0 && dt < .12) {
+    const blend = 1 - Math.exp(-dt * 16);
+    for (let i = 0; i < values.length; i++) values[i] = THREE.MathUtils.lerp(r.pose[i], values[i], blend);
   }
-  if (usesScooter && !rig.scooter.userData.wheels) {
-    person.remove(rig.scooter);
-    rig.scooter = createScooter({ color: state.scooterColor || '#37b7d8' });
-    rig.scooter.position.x = 0.16;
-    person.add(rig.scooter);
+  r.pose = values; r.lastTime = time;
+  r.pelvis.position.set(0, .92 + values[0] + values[1] - (walk ? .035 : 0), ride ? -.28 : 0);
+  r.pelvis.rotation.z = walk ? Math.sin(stride) * .025 : Math.sin(phase * 1.4) * .012;
+  r.body.rotation.set(values[2], 0, 0);
+  r.head.rotation.set(smell || water || action.includes('phone') ? .15 : 0,
+    action === 'browse' || ['talk', 'gesture'].includes(action) ? Math.sin(phase * 1.5) * .17 : 0, 0);
+  for (const [i, limb] of [r.leftArm, r.rightArm, r.leftLeg, r.rightLeg].entries()) {
+    limb.upper.rotation.set(values[3 + i], 0, i < 2 ? -limb.side * .07 : 0);
+    limb.lower.rotation.set(i < 2 ? -.13 : values[7 + i - 2], 0, 0);
+    limb.end.rotation.set(0, 0, 0);
   }
-  rig.bouquet.visible = hasBouquet;
-  rig.wateringCan.visible = hasCan;
-  rig.phone.visible = propEnabled(props, 'phone') || ['phone', 'look_phone', 'sit_phone'].includes(action);
-  rig.shoppingBag.visible = propEnabled(props, 'shoppingBag') || propEnabled(props, 'bag');
-  rig.bike.visible = usesBike;
-  rig.scooter.visible = usesScooter;
-  rig.waterStream.visible = action === 'water_flowers' || Boolean(state.waterStream);
-
-  if (['walk', 'carry', 'push_bike'].includes(action)) {
-    rig.leftArm.rotation.x = swing * 0.58;
-    rig.rightArm.rotation.x = -swing * 0.58;
-    rig.leftLeg.rotation.x = -swing * 0.65;
-    rig.rightLeg.rotation.x = swing * 0.65;
-  } else if (['sit', 'sit_phone'].includes(action)) {
-    rig.body.position.y = -0.4;
-    rig.leftLeg.rotation.x = -1.25;
-    rig.rightLeg.rotation.x = -1.25;
-    rig.leftArm.rotation.x = -0.35;
-    rig.rightArm.rotation.x = -0.35;
-    if (action === 'sit_phone') {
-      rig.rightArm.rotation.x = -1.25;
-      rig.rightArm.rotation.z = 0.28;
-      rig.leftArm.rotation.x = -0.95;
-      rig.head.rotation.x = 0.3;
-    }
-  } else if (['lock_bike', 'tie_shoe'].includes(action)) {
-    rig.body.rotation.x = -0.7;
-    rig.body.position.y = -0.15;
-    rig.leftArm.rotation.x = -1.1;
-    rig.rightArm.rotation.x = -1.1;
-    rig.head.rotation.x = 0.35;
-  } else if (['phone', 'look_phone'].includes(action)) {
-    rig.rightArm.rotation.x = -1.25;
-    rig.rightArm.rotation.z = 0.28;
-    rig.leftArm.rotation.x = -0.95;
-    rig.head.rotation.x = 0.3;
+  r.bouquet.visible = enabled(props, 'bouquet') || enabled(props, 'flowers') || (buy && progress >= .34);
+  r.money.visible = enabled(props, 'money') || (buy && progress < .34);
+  r.wateringCan.visible = water || enabled(props, 'watering_can');
+  r.phone.visible = enabled(props, 'phone') || action.includes('phone');
+  r.shoppingBag.visible = enabled(props, 'bag') || enabled(props, 'shoppingBag') || action === 'shopping_bag';
+  r.waterStream.visible = water && (progress >= .22 && progress < .82);
+  r.bike.visible = ride || action === 'push_bike' || enabled(props, 'bike');
+  r.scooter.visible = scooter || enabled(props, 'scooter');
+  if (r.bike.visible && !r.bike.userData.pedal) {
+    person.remove(r.bike); r.bike = createBike(); person.add(r.bike);
+  }
+  if (r.scooter.visible && !r.scooter.userData.wheels) {
+    person.remove(r.scooter); r.scooter = createScooter(); person.add(r.scooter);
+  }
+  r.bike.position.set(action === 'push_bike' ? .48 : 0, 0, action === 'push_bike' ? -.26 : 0);
+  if (r.bike.userData.basketBouquet) r.bike.userData.basketBouquet.visible = enabled(props, 'basket_bouquet');
+  if (r.bike.visible) r.bouquet.visible = false;
+  if (r.bike.visible && walk && !ride) r.bike.userData.spin(phase * 1.3);
+  const leftTarget = point(-.32, 1.03 + values[1], .05), rightTarget = point(.32, 1.03 + values[1], .05);
+  let leftIK = false, rightIK = false;
+  if (action === 'wave') {
+    rightTarget.set(.42 + Math.sin(phase * 5) * .09, 1.95, .06); rightIK = true;
   } else if (['talk', 'gesture'].includes(action)) {
-    rig.rightArm.rotation.x = -0.85 + Math.sin(phase * 3) * 0.18;
-    rig.rightArm.rotation.z = -0.55;
-    rig.head.rotation.y = Math.sin(phase * 1.5) * 0.16;
-  } else if (action === 'wave') {
-    rig.rightArm.rotation.z = -2.45;
-    rig.rightArm.rotation.y = Math.sin(phase * 7) * 0.35;
-  } else if (['bend', 'smell_flowers'].includes(action)) {
-    rig.body.rotation.x = -0.62;
-    rig.body.position.z = -0.18;
-    rig.head.rotation.x = 0.28;
-    rig.leftArm.rotation.x = -0.35;
-    rig.rightArm.rotation.x = -0.35;
-  } else if (action === 'buy_flowers') {
-    rig.leftArm.rotation.x = -1.18;
-    rig.rightArm.rotation.x = -1.12;
-    rig.rightArm.rotation.z = -0.18;
-  } else if (action === 'water_flowers') {
-    rig.body.rotation.x = -0.18;
-    rig.rightArm.rotation.x = -1.35;
-    rig.rightArm.rotation.z = -0.25;
-    rig.wateringCan.rotation.z = -0.6;
-    const drops = rig.waterStream.children;
-    for (let i = 0; i < drops.length; i += 1) {
-      drops[i].position.y = -i * 0.14 - ((phase * 1.7 + i * 0.13) % 0.18);
-    }
-  } else if (['ride_bike', 'pedal'].includes(action)) {
-    rig.body.position.y = 0.15;
-    rig.body.rotation.x = -0.17;
-    rig.leftArm.rotation.x = -1.08;
-    rig.rightArm.rotation.x = -1.08;
-    rig.leftLeg.rotation.x = Math.sin(phase * 7) * 0.82;
-    rig.rightLeg.rotation.x = Math.sin(phase * 7 + Math.PI) * 0.82;
-    rig.bike.userData.spin(phase * 3.6);
-  } else if (action === 'ride_scooter') {
-    rig.body.position.y = 0.05;
-    rig.leftArm.rotation.x = -1.08;
-    rig.rightArm.rotation.x = -1.08;
-    rig.leftLeg.rotation.x = 0.12;
-    rig.rightLeg.rotation.x = -0.42 + Math.sin(phase * 6) * 0.35;
-    for (const wheel of rig.scooter.userData.wheels) wheel.rotation.x = phase * 9;
+    rightTarget.set(.4, 1.23 + Math.sin(phase * 3) * .07, .40); rightIK = true;
+  } else if (action === 'browse') {
+    rightTarget.set(.29, 1.32, .23); rightIK = true;
+  } else if (smell) {
+    leftTarget.set(-.30, .88, .42); rightTarget.set(.30, .88, .42); leftIK = rightIK = true;
   }
-
-  if (action === 'push_bike') rig.bike.position.x = 0.68;
-  if (hasBouquet && rig.bike.visible && !['buy_flowers'].includes(action)) {
-    // Segment 11 onward stores the bouquet in the basket rather than Lily's hand.
-    rig.bouquet.visible = false;
-    if (rig.bike.userData.basket) {
-      rig.bike.userData.basket.material = material('#9b6b3f');
-      rig.bike.userData.basketBouquet.visible = true;
+  if (r.phone.visible) {
+    rightTarget.set(.14, 1.39 + values[1], .34); rightIK = true;
+    leftTarget.set(-.10, 1.25 + values[1], .30); leftIK = true;
+  }
+  if (buy) {
+    // The keeper stands behind Lily. Reach back to pay/receive, then lift the flowers.
+    const receive = smooth(.34, .62, progress);
+    rightTarget.set(.48 - receive * .15, 1.30 + receive * .13, -.36 + receive * .69); rightIK = true;
+    r.head.rotation.y = progress < .62 ? -.3 : 0;
+  } else if (action === 'sell_flowers') {
+    leftTarget.set(-.30, 1.18, .43); rightTarget.set(.28, 1.30, .52);
+    leftIK = rightIK = true;
+    r.bouquet.visible = progress < .34;
+    r.money.visible = progress >= .34;
+  } else if (r.bouquet.visible) {
+    rightTarget.set(.25, 1.18 + values[1], .30); rightIK = true;
+  }
+  if (r.wateringCan.visible) {
+    const lift = smooth(0, .22, progress) * (1 - smooth(.82, 1, progress));
+    rightTarget.set(.31, .88 + .52 * lift, .28 + .06 * lift); rightIK = true;
+    leftTarget.set(-.10, 1.20, .35); leftIK = true;
+  }
+  if (ride || action === 'push_bike' || scooter) {
+    const bx = action === 'push_bike' ? .48 : 0;
+    const bz = action === 'push_bike' ? -.26 : 0;
+    leftTarget.set(bx - .28, scooter ? 1.38 : 1.42, (scooter ? .40 : .60) + bz);
+    rightTarget.set(bx + .28, scooter ? 1.38 : 1.42, (scooter ? .40 : .60) + bz);
+    leftIK = rightIK = true;
+    if (action === 'push_bike') {
+      // Near hand steers; far hand meets the near section of the crossbar.
+      rightTarget.x = bx - .08;
     }
-  } else if (rig.bike.userData.basketBouquet) {
-    rig.bike.userData.basketBouquet.visible = false;
+  }
+  if (leftIK) reach(person, r.leftArm, leftTarget, [-.6, -.3, -.4]);
+  if (rightIK) reach(person, r.rightArm, rightTarget, [.6, -.3, -.4]);
+  for (const arm of [r.leftArm, r.rightArm]) heldLevel(arm);
+  if (r.wateringCan.visible) r.wateringCan.rotation.x = water ? .42 * smooth(.12, .28, progress) : 0;
+  if (ride) {
+    const feet = r.bike.userData.pedal(phase * 5);
+    for (const [i, leg] of [r.leftLeg, r.rightLeg].entries()) {
+      reach(person, leg, feet[i].clone().add(point(0, .113, -.055)), [0, 0, 1]);
+      heldLevel(leg);
+    }
+    r.bike.userData.spin(phase * 3.2);
+  } else if (scooter) {
+    reach(person, r.leftLeg, point(-.10, .29, -.06));
+    reach(person, r.rightLeg, point(.21, .10 + Math.max(0, Math.sin(stride)) * .17, -.28 - Math.sin(stride) * .25));
+    heldLevel(r.leftLeg); heldLevel(r.rightLeg);
+    r.scooter.userData.spin?.(phase * 2.5);
+  } else if (walk) {
+    for (const leg of [r.leftLeg, r.rightLeg]) {
+      const step = Math.sin(stride) * -leg.side;
+      reach(person, leg, point(leg.side * .13, .10 + Math.max(0, step) * .11, step * .18));
+      heldLevel(leg);
+    }
+  } else {
+    for (const leg of [r.leftLeg, r.rightLeg]) heldLevel(leg);
+  }
+  // Include IK-driven gestures in the transition blend. Pedal feet remain exact.
+  const joints = [r.leftArm, r.rightArm, ...(!ride ? [r.leftLeg, r.rightLeg] : [])]
+    .flatMap(limb => [limb.upper, limb.lower]);
+  const previous = r.joints || new Map();
+  for (const joint of joints) {
+    if (previous.has(joint) && dt > 0 && dt < .12) joint.quaternion.slerpQuaternions(
+      previous.get(joint), joint.quaternion.clone(), 1 - Math.exp(-dt * 20));
+    previous.set(joint, joint.quaternion.clone());
+  }
+  r.joints = previous;
+  for (const limb of [r.leftArm, r.rightArm, r.leftLeg, r.rightLeg]) heldLevel(limb);
+  if (r.waterStream.visible) {
+    person.updateMatrixWorld(true);
+    const tip = r.wateringCan.localToWorld(r.wateringCan.userData.spoutTip.clone());
+    person.worldToLocal(tip);
+    // World-down droplets originate at the transformed nozzle and land on the bed.
+    for (let i = 0; i < 18; i++) {
+      const f = ((i / 18 + phase * .85) % 1);
+      dummy.position.set(tip.x + Math.sin(i * 4) * .035 * f,
+        THREE.MathUtils.lerp(tip.y, .68, f), tip.z + f * .06);
+      dummy.scale.set(.018, .055, .018); dummy.updateMatrix();
+      r.waterStream.setMatrixAt(i, dummy.matrix);
+    }
+    r.waterStream.instanceMatrix.needsUpdate = true;
   }
   person.visible = state.visible !== false;
   return person;
 }
 
 export function disposePeopleResources() {
-  for (const geometry of Object.values(GEOMETRY)) geometry.dispose();
-  for (const item of MATERIALS.values()) item.dispose();
-  MATERIALS.clear();
+  for (const geometry of [...Object.values(G), ...COMPOSITES.values()]) geometry.dispose();
+  for (const m of MATERIALS.values()) m.dispose();
+  COMPOSITES.clear(); MATERIALS.clear();
 }
-
-export { GEOMETRY as SHARED_PERSON_GEOMETRIES, MATERIALS as SHARED_PERSON_MATERIALS };
+export { G as SHARED_PERSON_GEOMETRIES, MATERIALS as SHARED_PERSON_MATERIALS };
 export const buildPerson = createPerson;
 export const applyPersonPose = updatePerson;

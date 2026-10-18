@@ -10,10 +10,10 @@ export function projectPerson(camera, state) {
   const base = new THREE.Vector3(p.x, p.y || 0, p.z);
   const torso = state.torsoPosition
     ? new THREE.Vector3(state.torsoPosition.x, state.torsoPosition.y, state.torsoPosition.z)
-    : base.clone().add(new THREE.Vector3(0, 1.2, 0));
+    : base.clone().add(new THREE.Vector3(0, 1.24, 0));
   const centre = torso.clone().project(camera);
   const bottom = base.clone().add(new THREE.Vector3(0, 0.1, 0)).project(camera);
-  const top = base.clone().add(new THREE.Vector3(0, state.height || 2.1, 0)).project(camera);
+  const top = base.clone().add(new THREE.Vector3(0, state.height || 2.09, 0)).project(camera);
   return { x: centre.x, y: centre.y, z: centre.z, height: Math.abs(top.y - bottom.y) / 2, torso };
 }
 
