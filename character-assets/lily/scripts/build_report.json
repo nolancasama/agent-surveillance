@@ -1,0 +1,394 @@
+{
+  "triangles": 11298,
+  "materials": 3,
+  "draw_primitives": 3,
+  "vertices": 5833,
+  "joints": 15,
+  "bytes": 481716,
+  "bounds_min": [
+    -0.3431406021118164,
+    0.00029313869890756905,
+    -0.29395073652267456
+  ],
+  "bounds_max": [
+    0.3431406319141388,
+    2.0899767875671387,
+    0.20330044627189636
+  ],
+  "neutral_height": 2.089683648868231,
+  "max_influences": 3,
+  "max_weight_sum_error": 6.332993507385254e-08,
+  "original_bind_max_vertex_error": 6.454977343740141e-08,
+  "rest_rotations_identity": true,
+  "rest_scales_identity": true,
+  "cpu_pose_checks": [
+    {
+      "pose": "walking_stride",
+      "max_reference_error": 8.903441835098303e-16,
+      "max_vertex_displacement": 0.6925357791747985,
+      "rigid_head_vertices": 3097
+    },
+    {
+      "pose": "seated_pedalling",
+      "max_reference_error": 4.577566798522237e-16,
+      "max_vertex_displacement": 0.6978260891502459,
+      "rigid_head_vertices": 3097
+    },
+    {
+      "pose": "right_arm_raised",
+      "max_reference_error": 3.1401849173675503e-16,
+      "max_vertex_displacement": 0.8321316714061183,
+      "rigid_head_vertices": 3097
+    }
+  ],
+  "reduction": [
+    {
+      "object": "Backpack_Body",
+      "before": 1200,
+      "after": 180
+    },
+    {
+      "object": "Backpack_Buckle",
+      "before": 1200,
+      "after": 40
+    },
+    {
+      "object": "Backpack_Handle",
+      "before": 1152,
+      "after": 80
+    },
+    {
+      "object": "Backpack_Lid",
+      "before": 1200,
+      "after": 110
+    },
+    {
+      "object": "Backpack_Pocket",
+      "before": 1200,
+      "after": 100
+    },
+    {
+      "object": "Backpack_Strap_-1",
+      "before": 5728,
+      "after": 180
+    },
+    {
+      "object": "Backpack_Strap_1",
+      "before": 5728,
+      "after": 180
+    },
+    {
+      "object": "Hair_Back_120",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Back_135",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Back_150",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Back_165",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Back_180",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Back_195",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Back_210",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Back_225",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Back_240",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Bang_-19",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Bang_-31",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Bang_-43",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Bang_-56",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Bang_-8",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Bang_19",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Bang_31",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Bang_43",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Bang_56",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Bang_8",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Ear_-100",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Ear_-115",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Ear_-130",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Ear_100",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Ear_115",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Ear_130",
+      "before": 192,
+      "after": 96
+    },
+    {
+      "object": "Hair_Inner_128",
+      "before": 156,
+      "after": 78
+    },
+    {
+      "object": "Hair_Inner_152",
+      "before": 156,
+      "after": 78
+    },
+    {
+      "object": "Hair_Inner_180",
+      "before": 156,
+      "after": 78
+    },
+    {
+      "object": "Hair_Inner_208",
+      "before": 156,
+      "after": 78
+    },
+    {
+      "object": "Hair_Inner_232",
+      "before": 156,
+      "after": 78
+    },
+    {
+      "object": "Hair_Side_-70",
+      "before": 264,
+      "after": 132
+    },
+    {
+      "object": "Hair_Side_-82",
+      "before": 264,
+      "after": 132
+    },
+    {
+      "object": "Hair_Side_70",
+      "before": 264,
+      "after": 132
+    },
+    {
+      "object": "Hair_Side_82",
+      "before": 264,
+      "after": 132
+    },
+    {
+      "object": "Hair_Top_-115",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Top_-35",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Top_-75",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Top_115",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Top_35",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Hair_Top_75",
+      "before": 120,
+      "after": 60
+    },
+    {
+      "object": "Lily_Body",
+      "before": 1292,
+      "after": 1292
+    },
+    {
+      "object": "Lily_Ear_L",
+      "before": 1472,
+      "after": 100
+    },
+    {
+      "object": "Lily_Ear_R",
+      "before": 1472,
+      "after": 100
+    },
+    {
+      "object": "Lily_HairCap",
+      "before": 13760,
+      "after": 550
+    },
+    {
+      "object": "Lily_Hand_L",
+      "before": 2160,
+      "after": 130
+    },
+    {
+      "object": "Lily_Hand_R",
+      "before": 2160,
+      "after": 130
+    },
+    {
+      "object": "Lily_Head",
+      "before": 12096,
+      "after": 1500
+    },
+    {
+      "object": "Lily_Shirt",
+      "before": 11536,
+      "after": 800
+    },
+    {
+      "object": "Lily_Shoe_L",
+      "before": 4992,
+      "after": 200
+    },
+    {
+      "object": "Lily_Shoe_R",
+      "before": 4992,
+      "after": 200
+    },
+    {
+      "object": "Lily_ShoeCollar_L",
+      "before": 640,
+      "after": 80
+    },
+    {
+      "object": "Lily_ShoeCollar_R",
+      "before": 640,
+      "after": 80
+    },
+    {
+      "object": "Lily_Skirt",
+      "before": 11264,
+      "after": 1000
+    },
+    {
+      "object": "Lily_Sole_L",
+      "before": 4992,
+      "after": 200
+    },
+    {
+      "object": "Lily_Sole_R",
+      "before": 4992,
+      "after": 200
+    },
+    {
+      "object": "Lily_Thumb_L",
+      "before": 2160,
+      "after": 64
+    },
+    {
+      "object": "Lily_Thumb_R",
+      "before": 2160,
+      "after": 64
+    },
+    {
+      "object": "Ribbon_Knot",
+      "before": 1472,
+      "after": 80
+    },
+    {
+      "object": "Ribbon_Loop_-1",
+      "before": 2976,
+      "after": 120
+    },
+    {
+      "object": "Ribbon_Loop_1",
+      "before": 2976,
+      "after": 120
+    },
+    {
+      "object": "Ribbon_Tail_-1",
+      "before": 240,
+      "after": 50
+    },
+    {
+      "object": "Ribbon_Tail_1",
+      "before": 240,
+      "after": 50
+    }
+  ],
+  "source": "character-assets/lily/lily.blend",
+  "source_sha256": "1bc48bb5f4511ce70058586023a9d5c76017fde29cd68b7329540c662a4a085d",
+  "height_scale": 1.0768181977634284
+}

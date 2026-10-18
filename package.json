@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test \"src/**/*.test.js\"",
-    "test:e2e": "node test-e2e.js"
+    "test:e2e": "node test-e2e.js",
+    "check:lily": "node scripts/check-lily-glb.mjs"
   },
   "dependencies": {
     "three": "^0.180.0"

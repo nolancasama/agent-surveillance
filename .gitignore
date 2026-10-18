@@ -4,3 +4,4 @@ dist/
 .claude/checkpoint/
 .ai/
 *.blend1
+__pycache__/
