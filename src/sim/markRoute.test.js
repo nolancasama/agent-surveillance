@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LOOP_SECONDS, MARK_SEGMENTS, SEGMENT_WINDOWS, poseAt } from './markRoute.js';
+import { ACTIVITIES } from './activities.js';
 
 test('mark route has 15 segments, is about 210 seconds, and wraps', () => {
   assert.equal(MARK_SEGMENTS.length, 15);
@@ -39,5 +40,32 @@ test('all sampled mark positions remain inside the square and bike-rack area', (
     assert.ok(z >= -20 && z <= 20, `z=${z} at t=${t}`);
     assert.equal(y, 0);
   }
+});
+
+test('every segment and phase names a known activity throughout the unchanged loop', () => {
+  assert.equal(LOOP_SECONDS, 210);
+  for (const segment of MARK_SEGMENTS) {
+    assert.ok(Object.hasOwn(ACTIVITIES, segment.activityId), segment.id);
+    for (const phase of segment.animationPhases || []) {
+      assert.ok(Object.hasOwn(ACTIVITIES, phase.activityId), `${segment.id}/${phase.value}`);
+    }
+  }
+  for (let t = 0; t < LOOP_SECONDS; t += 0.1) {
+    assert.ok(Object.hasOwn(ACTIVITIES, poseAt(t).activityId), `t=${t}`);
+  }
+});
+
+test('phase observations distinguish waiting, waving, carrying, sitting, and bike chores', () => {
+  const sample = (id, fraction) => {
+    const window = SEGMENT_WINDOWS.find(entry => entry.id === id);
+    return poseAt(window.start + (window.end - window.start) * fraction).activityId;
+  };
+  assert.equal(sample('wait_wave', 0.1), 'standing');
+  assert.equal(sample('wait_wave', 0.5), 'wave');
+  assert.equal(sample('bouquet_to_bench', 0.5), 'hold_flowers');
+  assert.equal(sample('bouquet_to_bench', 0.9), 'sit_bench');
+  assert.equal(sample('lock_bike', 0.3), 'lock_bike');
+  assert.equal(sample('lock_bike', 0.6), 'tie_shoe');
+  assert.equal(sample('lock_bike', 0.9), 'cafe_phone');
 });
 

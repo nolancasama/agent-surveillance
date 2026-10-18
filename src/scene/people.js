@@ -401,6 +401,7 @@ export function updatePerson(person, state = {}, time = 0) {
     smell: 'smell_flowers', buy: 'buy_flowers', water: 'water_flowers',
     bike_push: 'push_bike', pushBike: 'push_bike', bike_ride: 'ride_bike',
     rideBike: 'ride_bike', scooter: 'ride_scooter', browse: 'idle',
+    sit_down: 'sit', stand_up: 'sit', check_phone: 'phone',
   })[rawAction] || rawAction;
   const props = state.propsHeld || state.heldProps || state.props || {};
   const phase = state.phase ?? time;
@@ -424,7 +425,7 @@ export function updatePerson(person, state = {}, time = 0) {
   }
   rig.bouquet.visible = hasBouquet;
   rig.wateringCan.visible = hasCan;
-  rig.phone.visible = propEnabled(props, 'phone') || ['phone', 'look_phone'].includes(action);
+  rig.phone.visible = propEnabled(props, 'phone') || ['phone', 'look_phone', 'sit_phone'].includes(action);
   rig.shoppingBag.visible = propEnabled(props, 'shoppingBag') || propEnabled(props, 'bag');
   rig.bike.visible = usesBike;
   rig.scooter.visible = usesScooter;
@@ -435,12 +436,24 @@ export function updatePerson(person, state = {}, time = 0) {
     rig.rightArm.rotation.x = -swing * 0.58;
     rig.leftLeg.rotation.x = -swing * 0.65;
     rig.rightLeg.rotation.x = swing * 0.65;
-  } else if (action === 'sit') {
+  } else if (['sit', 'sit_phone'].includes(action)) {
     rig.body.position.y = -0.4;
     rig.leftLeg.rotation.x = -1.25;
     rig.rightLeg.rotation.x = -1.25;
     rig.leftArm.rotation.x = -0.35;
     rig.rightArm.rotation.x = -0.35;
+    if (action === 'sit_phone') {
+      rig.rightArm.rotation.x = -1.25;
+      rig.rightArm.rotation.z = 0.28;
+      rig.leftArm.rotation.x = -0.95;
+      rig.head.rotation.x = 0.3;
+    }
+  } else if (['lock_bike', 'tie_shoe'].includes(action)) {
+    rig.body.rotation.x = -0.7;
+    rig.body.position.y = -0.15;
+    rig.leftArm.rotation.x = -1.1;
+    rig.rightArm.rotation.x = -1.1;
+    rig.head.rotation.x = 0.35;
   } else if (['phone', 'look_phone'].includes(action)) {
     rig.rightArm.rotation.x = -1.25;
     rig.rightArm.rotation.z = 0.28;

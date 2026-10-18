@@ -9,11 +9,14 @@ import { AMBIENT_NPCS, BLOOM_SHOPKEEPER, poseAmbientAt } from './sim/ambient.js'
 import { LOOP_SECONDS, poseAt } from './sim/markRoute.js';
 import { createTelephoto } from './camera/telephoto.js';
 import { createLedger } from './evidence/evidence.js';
+import { createNotebook, exportMission } from './evidence/notebook.js';
+import { personVisible, projectPerson, selectTarget, unblocked } from './evidence/visibility.js';
 import { captureThumbnail, judgePhoto, playShutterEffect, playShutterSound } from './evidence/photo.js';
 import { createHud } from './ui/hud.js';
 import { createReview } from './ui/review.js';
 import { createDeduction } from './ui/deduction.js';
 import { createReport } from './ui/report.js';
+import { createNotebookView } from './ui/notebook.js';
 
 const app = document.querySelector('#app');
 const lily = DATA.CHARACTERS.find(character => character.id === 'lily');
@@ -72,6 +75,13 @@ updatePerson(shopkeeper, {
 }, 0);
 
 let missionLedger = createLedger();
+const missionNotebook = createNotebook({ ledgerConfig: missionLedger.config() });
+let identified = false;
+let wrongMarks = 0;
+let lastMark = -Infinity;
+let lastIdentityHint = -Infinity;
+let lastVisibilityCheck = -Infinity;
+let notebookWasPaused = false;
 let phase = 'briefing';
 let paused = false;
 let missionTime = 0;
@@ -101,7 +111,7 @@ function makeBriefing() {
         <p class="eyebrow">Agent briefing · File 006</p>
         <h1>Find Lily</h1>
         <p class="briefing-card__description">Your mark is Lily. Look for a yellow shirt, long dark hair, a blue skirt, a small red hair ribbon, and a green backpack.</p>
-        <p class="briefing-card__description">Observe from the window. Photograph evidence that shows what she likes and what she can do.</p>
+        <p class="briefing-card__description">Find Lily from the window. Aim at her and press MARK TARGET first. Then photograph what she is doing to find out what she likes and what she can do.</p>
         <button class="primary-button" type="button">BEGIN SURVEILLANCE</button>
       </div>
     </div>`;
@@ -113,19 +123,22 @@ function makeBriefing() {
 const briefing = makeBriefing();
 const hud = createHud({
   parent: app,
-  onShoot: () => takePhoto(),
+  onShoot: () => primaryAction(),
   onFinish: () => finishSurveillance(),
   onZoom: value => telephoto.setSlider(value),
   onResume: () => setPaused(false),
+  onNotebook: () => openNotebook(),
 });
-const review = createReview({ parent: app, onReport: () => beginDeduction() });
+const review = createReview({ parent: app, onReport: () => beginDeduction(), onNotebook: () => openNotebook() });
 const deduction = createDeduction({
   parent: app,
   character: lily,
   onRecord: () => handleRecord(),
   onChoice: choice => handleChoice(choice),
+  onNotebook: () => openNotebook(),
 });
 const report = createReport({ parent: app, onPlayAgain: () => window.location.reload() });
+const notebookView = createNotebookView({ parent: app, onClose: () => closeNotebook() });
 hud.hide();
 review.hide();
 deduction.hide();
@@ -135,8 +148,10 @@ let telephoto;
 telephoto = createTelephoto({
   camera,
   canvas,
-  onShoot: () => takePhoto(),
+  onShoot: () => primaryAction(),
   onPause: () => {
+    if (notebookView.isOpen()) return;
+    if (hud.closeDossier()) return;
     if (phase === 'surveillance') setPaused(!paused);
   },
   onZoom: zoom => hud.setZoom(zoom, telephoto ? telephoto.getSlider() : 0),
@@ -195,7 +210,9 @@ function status() {
 function updateHud() {
   const current = status();
   hud.setPhotos(current.photos.length, current.photos.length + current.remaining);
-  hud.setShutterEnabled(current.remaining > 0 && phase === 'surveillance' && !paused && sceneRevealed);
+  hud.setIdentified(identified);
+  hud.setShutterEnabled((!identified || current.remaining > 0) && phase === 'surveillance' && !paused && sceneRevealed);
+  hud.setZoomEnabled(!paused);
 }
 
 function startMission() {
@@ -208,18 +225,104 @@ function startMission() {
   hud.show();
   telephoto.setEnabled(true);
   updateHud();
-  hud.showHint('Watch the mark carefully. Take photos of useful evidence.', 6000);
+  hud.showHint('Check your dossier. Aim at Lily and press MARK TARGET first.', 6000);
   Sfx.bgmStart();
 }
 
-function setPaused(value) {
+function setPaused(value, showPanel = true) {
   paused = Boolean(value);
-  hud.setPaused(paused);
+  hud.setPaused(paused && showPanel);
   telephoto.setEnabled(!paused && phase === 'surveillance');
   updateHud();
 }
 
+function openNotebook() {
+  if (!['surveillance', 'review', 'deduction'].includes(phase) || notebookView.isOpen() || recording) return;
+  hud.closeDossier();
+  notebookWasPaused = paused;
+  if (phase === 'surveillance') setPaused(true, false);
+  notebookView.show({ entries: missionNotebook.entries(), photos: status().photos });
+}
+
+function closeNotebook() {
+  notebookView.hide();
+  if (phase === 'surveillance') setPaused(notebookWasPaused);
+}
+
+window.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !event.defaultPrevented && phase === 'surveillance' && paused
+    && !notebookView.isOpen()) {
+    event.preventDefault();
+    setPaused(false);
+    return;
+  }
+  if (event.defaultPrevented || event.repeat || event.key.toLowerCase() !== 'n'
+    || event.target.matches('input, textarea, [contenteditable="true"]')) return;
+  event.preventDefault();
+  if (notebookView.isOpen()) closeNotebook();
+  else openNotebook();
+});
+
+function peopleInScene() {
+  return [
+    { id: 'lily', state: markRenderPose() },
+    ...ambientPeople.map(({ npc, object }) => ({ id: npc.id, state: {
+      ...poseAmbientAt(npc, missionTime), height: 2.1, visible: object.visible,
+    } })),
+    { id: BLOOM_SHOPKEEPER.id, state: { position: BLOOM_SHOPKEEPER.position, height: 2.1 } },
+  ];
+}
+
+function identityLocationHint() {
+  const id = poseAt(missionTime).segmentId;
+  const area = /cafe|talk_friend/.test(id) ? 'the cafe'
+    : /robots/.test(id) ? 'the ROBOTS shop'
+      : /water_flowers/.test(id) ? 'the flowerbed'
+        : /bike/.test(id) ? 'the bike rack'
+          : /bench/.test(id) ? 'the bench'
+            : /music/.test(id) ? 'the MUSIC shop' : 'the north shops';
+  return `Try looking near ${area}.`;
+}
+
+function maybeIdentityHint() {
+  if (identified || (wrongMarks < 3 && missionTime < 60)
+    || missionTime - lastIdentityHint < 60 || performance.now() - lastMark < 4000) return;
+  hud.showHint(identityLocationHint(), 6500);
+  lastIdentityHint = missionTime;
+  lastLocationHint = missionTime;
+}
+
+function markTarget() {
+  if (identified || phase !== 'surveillance' || paused || !sceneRevealed) return { ok: false, reason: 'unavailable' };
+  const now = performance.now();
+  if (now - lastMark < 800) return { ok: false, reason: 'cooldown' };
+  lastMark = now;
+  updateWorld();
+  scene.updateMatrixWorld(true);
+  const selected = selectTarget(peopleInScene(), {
+    project: person => projectPerson(camera, person.state),
+    isUnblocked: (_, projection) => unblocked(camera, projection, market.occluders),
+  });
+  if (selected.id === 'lily') {
+    identified = true;
+    hud.showHint('Identity confirmed. Begin surveillance.', 4500);
+    updateHud();
+    return { ok: true, id: selected.id };
+  }
+  if (selected.id) wrongMarks += 1;
+  hud.showHint(selected.id ? 'Identity does not match. Check your dossier.'
+    : selected.reason === 'too-small' ? 'Too far away. Zoom in closer.'
+      : 'No one is in your sights. Zoom in on a person.', 4000);
+  // Let the rejection line finish before giving a rescue location.
+  return { ok: false, ...selected };
+}
+
+function primaryAction() {
+  return identified ? takePhoto() : markTarget();
+}
+
 function maybeLocationHint() {
+  if (!identified) { maybeIdentityHint(); return; }
   const current = status();
   if (missionTime < LOOP_SECONDS || current.complete || missionTime - lastLocationHint < 60) return;
   if (current.likeCount < current.likeNeeded && !hintForLikes) {
@@ -235,6 +338,7 @@ function maybeLocationHint() {
 }
 
 async function takePhoto() {
+  if (!identified) return { ok: false, reason: 'unidentified' };
   if (phase !== 'surveillance' || paused || !sceneRevealed) return { ok: false, reason: 'unavailable' };
   const now = performance.now();
   if (now - lastShot < 600) return { ok: false, reason: 'cooldown' };
@@ -246,11 +350,17 @@ async function takePhoto() {
   const thumbnail = captureThumbnail(renderer.domElement);
   const currentMark = markRenderPose();
   const eventId = judgePhoto(camera, currentMark, { occluders: market.occluders });
-  const result = missionLedger.capture({ eventId, thumbnail });
+  const visible = personVisible(camera, currentMark, { occluders: market.occluders });
+  const result = missionLedger.capture({ eventId, thumbnail, missionTime });
   if (!result.ok) return result;
   playShutterEffect(stage);
   playShutterSound(Sfx);
   hud.showToast('PHOTO SAVED');
+  if (visible) {
+    const note = missionNotebook.record({ activityId: currentMark.activityId, eventId: currentMark.eventId,
+      photoId: status().photos.at(-1).id, missionTime });
+    if (note?.added) hud.showNoteToast(note.entry.text);
+  }
   hud.addThumbnail(thumbnail, `Photo ${status().photos.length}`);
   updateHud();
 
@@ -442,12 +552,17 @@ function tick(now) {
   lastFrame = now;
   if (phase === 'surveillance' && !paused) {
     missionTime += dt;
+    missionLedger.setElapsedSeconds(missionTime);
     maybeLocationHint();
   }
   resize();
   updateWorld();
   telephoto.update(dt);
   renderer.render(scene, camera);
+  if (phase === 'surveillance' && now - lastVisibilityCheck >= 100) {
+    lastVisibilityCheck = now;
+    hud.setTargetVisible(identified && personVisible(camera, markRenderPose(), { occluders: market.occluders }));
+  }
   if (phase === 'surveillance' && !sceneRevealed
     && Number.parseFloat(getComputedStyle(stage).opacity || '1') >= 0.999) {
     sceneRevealed = true;
@@ -472,10 +587,28 @@ function installTestHooks() {
     }),
     setTime(t) {
       missionTime = Number(t) || 0;
+      missionLedger.setElapsedSeconds(missionTime);
       updateWorld();
       return markRenderPose();
     },
     markState: () => markRenderPose(),
+    markTarget() {
+      lastMark = -Infinity;
+      return markTarget();
+    },
+    aimAtPerson(id, zoom = 12) {
+      updateWorld();
+      const person = peopleInScene().find(person => person.id === id);
+      if (!person) return false;
+      const p = person.state.position;
+      telephoto.aimAt(new THREE.Vector3(p.x, (p.y || 0) + 1.2, p.z), zoom, true);
+      renderer.render(scene, camera);
+      return true;
+    },
+    people: () => peopleInScene().map(person => person.id),
+    notebook: () => missionNotebook.entries(),
+    exportMission: () => exportMission(missionLedger, missionNotebook),
+    identified: () => identified,
     aimAtMark(zoom = 12) {
       const state = markRenderPose();
       telephoto.aimAt(new THREE.Vector3(state.position.x, 1.1, state.position.z), zoom, true);

@@ -80,6 +80,26 @@ try {
   assert.equal(sceneState.markExists, true);
   assert.ok(sceneState.npcCount >= 12);
   await page.screenshot({ path: join(shots, 'wide-view.png') });
+  await page.screenshot({ path: join(shots, 'dossier-panel.png') });
+  assert.equal(await page.evaluate(() => window.__surv.identified()), false);
+  assert.equal(await page.locator('.shutter-button').textContent(), 'MARK TARGET');
+  assert.equal((await page.evaluate(() => window.__surv.shoot())).reason, 'unidentified');
+  assert.equal(await page.evaluate(() => window.__surv.ledger().photos.length), 0);
+  assert.ok((await page.evaluate(() => window.__surv.people())).includes('yellow_short'));
+  await page.evaluate(() => window.__surv.aimAtPerson('yellow_short', 12));
+  const rejected = await page.evaluate(() => window.__surv.markTarget());
+  assert.equal(rejected.ok, false);
+  assert.equal(rejected.id, 'yellow_short');
+  assert.equal(await page.evaluate(() => window.__surv.identified()), false);
+  assert.match(await page.locator('.hud__hint').textContent(), /does not match/);
+  await page.evaluate(() => {
+    window.__surv.setTime(10);
+    window.__surv.aimAtPerson('lily', 12);
+  });
+  assert.equal((await page.evaluate(() => window.__surv.markTarget())).ok, true);
+  assert.equal(await page.evaluate(() => window.__surv.identified()), true);
+  assert.equal(await page.locator('.shutter-button').textContent(), 'TAKE PHOTO');
+  await page.screenshot({ path: join(shots, 'mark-confirmation.png') });
 
   const wideFov = sceneState.fov;
   await page.evaluate(() => window.__surv.aimAtMark(12));
@@ -96,6 +116,10 @@ try {
     }, { at: time });
     await page.screenshot({ path: join(shots, `${eventId}.png`) });
     await page.evaluate(() => window.__surv.shoot());
+    if (eventId === 'smell_flowers') {
+      await page.waitForTimeout(300);
+      await page.screenshot({ path: join(shots, 'note-toast.png') });
+    }
     await page.waitForTimeout(650);
     const captured = await page.evaluate(() => window.__surv.ledger().photos.at(-1));
     await assertThumbnailNotBlank(captured.thumbnail, `${eventId} thumbnail`);
@@ -115,14 +139,32 @@ try {
   assert.equal(ledger.complete, true);
   assert.ok(ledger.photos.length >= 5);
   assert.ok(ledger.photos[0].thumbnail.startsWith('data:image/jpeg'));
+  const notes = await page.evaluate(() => window.__surv.notebook());
+  assert.equal(notes.length, 4);
+  assert.equal(notes[0].photoIds.length, 2);
+  const exported = await page.evaluate(() => JSON.parse(JSON.stringify(window.__surv.exportMission())));
+  assert.equal(exported.version, 1);
+  assert.equal(exported.observations.length, 4);
+  await page.keyboard.press('n');
+  assert.equal(await page.evaluate(() => window.__surv.state().paused), true);
+  const pausedTime = await page.evaluate(() => window.__surv.state().time);
+  await page.waitForTimeout(250);
+  assert.equal(await page.evaluate(() => window.__surv.state().time), pausedTime);
+  await page.screenshot({ path: join(shots, 'field-notebook.png') });
+  await page.keyboard.press('Escape');
+  assert.equal(await page.evaluate(() => window.__surv.state().paused), false);
   await page.evaluate(() => window.__surv.finish());
   await page.locator('[data-screen="review"]').waitFor({ state: 'visible' });
   const labels = await page.locator('[data-screen="review"] .photo-card__label').allTextContents();
   assert.ok(labels.every((label, index) => label === `PHOTO ${index + 1}`));
   await page.screenshot({ path: join(shots, 'review.png') });
+  await page.locator('[data-screen="review"] .notebook-button').click();
+  await page.keyboard.press('Escape');
 
   await page.locator('[data-screen="review"] .primary-button').click();
   await page.screenshot({ path: join(shots, 'deduction.png') });
+  await page.locator('[data-screen="deduction"] .notebook-button').click();
+  await page.keyboard.press('Escape');
   const answer = async transcript => {
     await page.evaluate(value => window.__surv.stubSpeech(value), transcript);
     await page.locator('.record-button').click();

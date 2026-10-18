@@ -42,3 +42,11 @@ A useful rule:
 - The bike evidence lap uses the open ring around the fountain and preserves its original 16-second evidence window. Why: the former perimeter route crossed the cafe furniture and weakened the action's readability.
 - The distant scene uses one extended ground mesh and one instanced low-building skyline. Why: the wide camera needs a continuous horizon while keeping the backdrop to two additional draw calls.
 - Shutter availability is gated on a full-opacity surveillance frame having rendered. The test harness waits on the same readiness state and rejects thumbnails whose luminance mean and variance indicate a blank/dark capture.
+
+## 2026-10-18 - Identify first, describe photographed activities
+- The primary action morphs from MARK TARGET to TAKE PHOTO after the student correctly identifies Lily using the dossier. Wrong marks cost no film. Rejected: a separate disabled shutter, which adds a second action before the student can use it.
+- The subtle TARGET IN VIEW state checks identity visibility only, using the same framing, size and building occlusion rules as photography. Rejected: an event-aware indicator, which would reveal evidence moments. The visibility check runs at most ten times per second.
+- Filler activities create notebook entries too. A note describes what Lily is doing in a photograph; its existence must not reveal evidence strength. Frozen present-progressive sentences avoid supplying the LIKE or CAN deduction answers.
+- The evidence ledger remains the scoring source. Notebook entries deduplicate by activity and store ledger photo IDs rather than copying thumbnails. Like/can/weak classification comes from shared evidence configuration and is never rendered in surveillance, review or the notebook.
+- The Field Notebook pauses surveillance and mission time, and remains available read-only during review and deduction. New-note toasts do not pause or intercept input.
+- Agent Briefing integration uses a versioned JSON export: `{ version: 1, mission: 'surveillance-market', targetId: 'lily', elapsedSeconds, photos: [{ id, thumbnail, missionTime }], observations: [...] }`. Observation metadata stays separate from the neutral photo list; no integration with the sibling repository is included.

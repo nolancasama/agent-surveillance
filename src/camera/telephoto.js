@@ -119,7 +119,10 @@ export function createTelephoto({ camera, canvas, onShoot, onPause, onZoom }) {
   }
 
   function onKeyDown(event) {
-    if (!state.enabled) return;
+    if (!state.enabled || event.defaultPrevented) return;
+    if (event.target?.closest?.('input, textarea, [contenteditable="true"]')) return;
+    // Focused buttons keep their native Space/Enter action; other camera keys remain available.
+    if (event.target?.closest?.('button') && (event.code === 'Space' || event.key === 'Enter')) return;
     const key = event.key.toLowerCase();
     keys.add(key);
     if (event.code === 'Space') {
@@ -181,7 +184,10 @@ export function createTelephoto({ camera, canvas, onShoot, onPause, onZoom }) {
     getSlider,
     zoom: () => fovToZoom(state.fov),
     fov: () => state.fov,
-    setEnabled(value) { state.enabled = Boolean(value); },
+    setEnabled(value) {
+      state.enabled = Boolean(value);
+      if (!state.enabled) { keys.clear(); state.dragging = false; }
+    },
     state,
   };
 }

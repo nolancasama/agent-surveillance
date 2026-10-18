@@ -18,27 +18,33 @@ export function createHud({
   onFinish = () => {},
   onZoom = () => {},
   onResume = () => {},
+  onNotebook = () => {},
 } = {}) {
   const root = document.createElement('section');
   root.className = 'hud';
   root.setAttribute('aria-label', 'Surveillance camera controls');
   root.innerHTML = `
     <div class="hud__top">
-      <div class="hud__objective">Observe LILY. Photograph useful evidence.</div>
-      <div class="hud__counter" aria-live="polite">PHOTOS 0 / 10</div>
+      <div class="target-dossier">
+        <button class="target-dossier__portrait" type="button" aria-label="Compare Lily's portrait" aria-expanded="false" aria-controls="target-dossier-detail"><img src="./assets/lily.png" alt="Lily" /></button>
+        <div class="target-dossier__summary"><strong>LILY</strong><p>Yellow shirt, long dark hair, red ribbon, blue skirt, green backpack.</p></div>
+      </div>
+      <div class="hud__mission"><div class="hud__objective">Find LILY. Aim at her and press MARK TARGET.</div><div class="hud__counter" aria-live="polite">PHOTOS 0 / 10</div></div>
     </div>
-    <div class="reticle" aria-hidden="true"></div>
+    <aside class="target-dossier__detail" id="target-dossier-detail" aria-label="Lily's target dossier" hidden><button class="target-dossier__close icon-button" type="button" aria-label="Close portrait">×</button><button class="target-dossier__comparison" type="button" aria-label="Close enlarged portrait"><img src="./assets/lily.png" alt="Lily, wearing a yellow shirt and blue skirt" /></button><strong>LILY</strong><p>Yellow shirt, long dark hair, red ribbon, blue skirt, green backpack.</p></aside>
+    <div class="reticle" aria-hidden="true"><span class="reticle__target" hidden>TARGET IN VIEW</span></div>
     <div class="hud__hint" role="status" hidden></div>
     <div class="hud__toast" role="status" hidden></div>
+    <div class="hud__note-toast" role="status" hidden><strong>FIELD NOTE ADDED</strong><span></span></div>
     <div class="film-strip" aria-label="Saved photos"></div>
     <div class="hud__bottom">
-      <button class="secondary-button hud__finish" type="button">FINISH SURVEILLANCE</button>
+      <div class="hud__actions"><button class="secondary-button notebook-button hud__notebook" type="button" aria-keyshortcuts="N">FIELD NOTEBOOK</button><button class="secondary-button hud__finish" type="button">FINISH SURVEILLANCE</button></div>
       <div class="hud__controls">
         <label class="hud__zoom-box">
           <span class="hud__zoom-readout">1.0×</span>
           <input class="hud__zoom-slider" type="range" min="0" max="1" step="0.001" value="0" aria-label="Camera zoom" />
         </label>
-        <button class="shutter-button" type="button" aria-label="Take photo">TAKE PHOTO</button>
+        <button class="shutter-button" type="button" aria-label="Mark target">MARK TARGET</button>
       </div>
     </div>`;
 
@@ -58,12 +64,43 @@ export function createHud({
   const toast = root.querySelector('.hud__toast');
   const hint = root.querySelector('.hud__hint');
   const filmStrip = root.querySelector('.film-strip');
+  const dossierPortrait = root.querySelector('.target-dossier__portrait');
+  const dossierDetail = root.querySelector('.target-dossier__detail');
+  const targetTag = root.querySelector('.reticle__target');
+  const noteToast = root.querySelector('.hud__note-toast');
   let toastTimer = 0;
   let hintTimer = 0;
+  let noteTimer = 0;
+  let typeTimer = 0;
+  let identified = false;
   let pausePanel = null;
+
+  function closeDossier() {
+    if (dossierDetail.hidden) return false;
+    dossierDetail.hidden = true;
+    dossierPortrait.setAttribute('aria-expanded', 'false');
+    if (dossierDetail.contains(document.activeElement)) dossierPortrait.focus();
+    return true;
+  }
+
+  function onKeyDown(event) {
+    if (event.key === 'Escape' && !root.hidden && closeDossier()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }
 
   shutter.addEventListener('click', onShoot);
   finish.addEventListener('click', onFinish);
+  root.querySelector('.hud__notebook').addEventListener('click', onNotebook);
+  dossierPortrait.addEventListener('click', () => {
+    if (closeDossier()) return;
+    dossierDetail.hidden = false;
+    dossierPortrait.setAttribute('aria-expanded', 'true');
+  });
+  dossierDetail.querySelector('.target-dossier__close').addEventListener('click', closeDossier);
+  dossierDetail.querySelector('.target-dossier__comparison').addEventListener('click', closeDossier);
+  window.addEventListener('keydown', onKeyDown, true);
   zoomSlider.addEventListener('input', () => onZoom(Number(zoomSlider.value)));
   parent.append(root);
 
@@ -85,7 +122,19 @@ export function createHud({
   return {
     root,
     show() { root.hidden = false; },
-    hide() { root.hidden = true; },
+    hide() { root.hidden = true; closeDossier(); },
+    closeDossier,
+    setIdentified(value) {
+      identified = Boolean(value);
+      shutter.textContent = identified ? 'TAKE PHOTO' : 'MARK TARGET';
+      shutter.setAttribute('aria-label', identified ? 'Take photo' : 'Mark target');
+      shutter.classList.toggle('is-identified', identified);
+      objective.textContent = identified ? 'Observe LILY. Photograph useful evidence.' : 'Find LILY. Aim at her and press MARK TARGET.';
+      if (!identified) targetTag.hidden = true;
+    },
+    setTargetVisible(visible) {
+      targetTag.hidden = !identified || !visible;
+    },
     setObjective(text = 'Observe LILY. Photograph useful evidence.') {
       objective.textContent = text;
     },
@@ -104,7 +153,21 @@ export function createHud({
     showToast(message = 'PHOTO SAVED', duration = 1800) {
       timedMessage(toast, message, duration, 'toast');
     },
-    showHint(message = 'Watch the mark carefully. Take photos of useful evidence.', duration = 6000) {
+    showNoteToast(text) {
+      window.clearTimeout(noteTimer);
+      window.clearInterval(typeTimer);
+      const sentence = noteToast.querySelector('span');
+      sentence.textContent = '';
+      noteToast.hidden = false;
+      let length = 0;
+      typeTimer = window.setInterval(() => {
+        length += 1;
+        sentence.textContent = text.slice(0, length);
+        if (length >= text.length) window.clearInterval(typeTimer);
+      }, 24);
+      noteTimer = window.setTimeout(() => { noteToast.hidden = true; window.clearInterval(typeTimer); }, 3200);
+    },
+    showHint(message = 'Find Lily. Aim at her and press MARK TARGET first.', duration = 6000) {
       timedMessage(hint, message, duration, 'hint');
     },
     addThumbnail(src, label = '') {
@@ -135,6 +198,9 @@ export function createHud({
     destroy() {
       window.clearTimeout(toastTimer);
       window.clearTimeout(hintTimer);
+      window.clearTimeout(noteTimer);
+      window.clearInterval(typeTimer);
+      window.removeEventListener('keydown', onKeyDown, true);
       root.remove();
     },
   };

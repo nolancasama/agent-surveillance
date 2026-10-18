@@ -35,7 +35,7 @@ export function renderPhotoGrid(container, photos = [], options = {}) {
 }
 
 /** Neutral evidence review: event metadata is intentionally never rendered here. */
-export function createReview({ parent = document.body, photos = [], onReport = () => {} } = {}) {
+export function createReview({ parent = document.body, photos = [], onReport = () => {}, onNotebook = () => {} } = {}) {
   const root = document.createElement('section');
   root.className = 'screen review-screen';
   root.dataset.screen = 'review';
@@ -45,7 +45,7 @@ export function createReview({ parent = document.body, photos = [], onReport = (
       <h1>Evidence Review</h1>
       <p class="screen__lead">Review your photos, then report your conclusions to HQ.</p>
       <div class="photo-grid" aria-label="Captured photos"></div>
-      <button class="primary-button" type="button">REPORT TO HQ</button>
+      <div class="review-actions"><button class="primary-button" type="button">REPORT TO HQ</button><button class="secondary-button notebook-button review__notebook" type="button" aria-keyshortcuts="N">FIELD NOTEBOOK</button></div>
     </div>`;
   const grid = root.querySelector('.photo-grid');
   const report = root.querySelector('.primary-button');
@@ -80,6 +80,7 @@ export function createReview({ parent = document.body, photos = [], onReport = (
   }
 
   report.addEventListener('click', onReport);
+  root.querySelector('.review__notebook').addEventListener('click', onNotebook);
   setPhotos(photos);
   parent.append(root);
 

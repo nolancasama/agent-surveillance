@@ -12,6 +12,7 @@ export function createDeduction({
   character = null,
   onRecord = () => {},
   onChoice = () => {},
+  onNotebook = () => {},
 } = {}) {
   const root = document.createElement('section');
   root.className = 'screen deduction-screen';
@@ -35,6 +36,7 @@ export function createDeduction({
         <aside>
           <p class="section-label">Your evidence</p>
           <div class="evidence-strip" aria-label="Evidence photos"></div>
+          <button class="secondary-button notebook-button deduction__notebook" type="button" aria-keyshortcuts="N">FIELD NOTEBOOK</button>
         </aside>
       </div>
     </div>`;
@@ -50,6 +52,7 @@ export function createDeduction({
   let currentStep = null;
 
   record.addEventListener('click', () => onRecord(currentStep));
+  root.querySelector('.deduction__notebook').addEventListener('click', onNotebook);
   parent.append(root);
 
   function setEvidence(nextPhotos = []) {
