@@ -1,0 +1,941 @@
+{
+  "asset": "Lily redesign v2 - unrigged visual review",
+  "blender_version": "5.2.0 LTS",
+  "scene": "Lily_Design_02",
+  "mesh_objects": 67,
+  "evaluated_triangles": 11908,
+  "triangle_budget": 12000,
+  "material_count": 24,
+  "bounds_min": [
+    -0.4291618764400482,
+    -0.2101716250181198,
+    0.0025475986767560244
+  ],
+  "bounds_max": [
+    0.4276306927204132,
+    0.31564855575561523,
+    2.0858216285705566
+  ],
+  "dimensions_xyz": [
+    0.8567925691604614,
+    0.525820180773735,
+    2.0832740298938006
+  ],
+  "coordinate_convention": "-Y forward, +Z up",
+  "armatures": 0,
+  "animations": 0,
+  "checks_passed": [
+    "finite_geometry",
+    "triangle_budget",
+    "crown_height",
+    "ground_clearance",
+    "no_edges_with_more_than_two_faces",
+    "no_zero_area_faces",
+    "no_rig_or_animation",
+    "fringe_clearance_regression",
+    "five_renders_written"
+  ],
+  "fringe_clearance_samples": [
+    {
+      "x": -0.15,
+      "z": 1.96,
+      "hair_in_front_of_head": 0.03714412450790405
+    },
+    {
+      "x": -0.16,
+      "z": 1.98,
+      "hair_in_front_of_head": 0.04912829399108887
+    },
+    {
+      "x": -0.13,
+      "z": 2.0,
+      "hair_in_front_of_head": 0.04431581497192383
+    },
+    {
+      "x": -0.12,
+      "z": 1.96,
+      "hair_in_front_of_head": 0.03232741355895996
+    },
+    {
+      "x": 0,
+      "z": 2.0,
+      "hair_in_front_of_head": 0.032434046268463135
+    },
+    {
+      "x": -0.18,
+      "z": 1.95,
+      "hair_in_front_of_head": 0.048882365226745605
+    }
+  ],
+  "renders": [
+    {
+      "file": "renders/lily_front.png",
+      "resolution": [
+        1120,
+        1440
+      ],
+      "camera_position": [
+        0,
+        -6,
+        1.6
+      ],
+      "target": [
+        0,
+        0,
+        1.06
+      ],
+      "orthographic_scale": 2.34
+    },
+    {
+      "file": "renders/lily_left.png",
+      "resolution": [
+        1120,
+        1440
+      ],
+      "camera_position": [
+        -6,
+        0,
+        1.6
+      ],
+      "target": [
+        0,
+        0,
+        1.06
+      ],
+      "orthographic_scale": 2.34
+    },
+    {
+      "file": "renders/lily_rear.png",
+      "resolution": [
+        1120,
+        1440
+      ],
+      "camera_position": [
+        0,
+        6,
+        1.6
+      ],
+      "target": [
+        0,
+        0,
+        1.06
+      ],
+      "orthographic_scale": 2.34
+    },
+    {
+      "file": "renders/lily_three_quarter.png",
+      "resolution": [
+        1120,
+        1440
+      ],
+      "camera_position": [
+        3.8,
+        -6,
+        1.75
+      ],
+      "target": [
+        0,
+        0,
+        1.07
+      ],
+      "orthographic_scale": 2.36
+    },
+    {
+      "file": "renders/lily_face.png",
+      "resolution": [
+        1080,
+        1080
+      ],
+      "camera_position": [
+        0.28,
+        -4,
+        1.86
+      ],
+      "target": [
+        0,
+        -0.025,
+        1.815
+      ],
+      "orthographic_scale": 0.66
+    }
+  ],
+  "parts": [
+    {
+      "name": "L2_Body continuous topology",
+      "vertices": 702,
+      "triangles": 1400,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SKIN",
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Shirt continuous sleeves",
+      "vertices": 296,
+      "triangles": 600,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SOLIDIFY",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Shirt finished hem 0",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Shirt finished hem 1",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Shirt finished hem 2",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Shirt finished hem 3",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Skirt tailored pleats",
+      "vertices": 300,
+      "triangles": 600,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "SOLIDIFY",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Skirt waistband",
+      "vertices": 81,
+      "triangles": 100,
+      "open_boundary_edges": 62,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left sock",
+      "vertices": 100,
+      "triangles": 140,
+      "open_boundary_edges": 60,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left shoe sole",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left shaped shoe upper",
+      "vertices": 111,
+      "triangles": 180,
+      "open_boundary_edges": 42,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left shoe opening welt",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left vamp seam",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right sock",
+      "vertices": 100,
+      "triangles": 140,
+      "open_boundary_edges": 60,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right shoe sole",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right shaped shoe upper",
+      "vertices": 111,
+      "triangles": 180,
+      "open_boundary_edges": 42,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right shoe opening welt",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right vamp seam",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Head sculpted cheek jaw nose",
+      "vertices": 802,
+      "triangles": 1600,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left almond eye",
+      "vertices": 105,
+      "triangles": 160,
+      "open_boundary_edges": 48,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left iris rim",
+      "vertices": 49,
+      "triangles": 64,
+      "open_boundary_edges": 32,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left amber iris",
+      "vertices": 49,
+      "triangles": 64,
+      "open_boundary_edges": 32,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left iris lower glow",
+      "vertices": 49,
+      "triangles": 64,
+      "open_boundary_edges": 32,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left pupil",
+      "vertices": 49,
+      "triangles": 64,
+      "open_boundary_edges": 32,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left catchlight",
+      "vertices": 43,
+      "triangles": 64,
+      "open_boundary_edges": 20,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left small catchlight",
+      "vertices": 39,
+      "triangles": 64,
+      "open_boundary_edges": 12,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left upper lash",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left outer lash tip",
+      "vertices": 13,
+      "triangles": 21,
+      "open_boundary_edges": 3,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": []
+    },
+    {
+      "name": "L2_Left tapered eyebrow",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Left ear",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right almond eye",
+      "vertices": 105,
+      "triangles": 160,
+      "open_boundary_edges": 48,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right iris rim",
+      "vertices": 49,
+      "triangles": 64,
+      "open_boundary_edges": 32,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right amber iris",
+      "vertices": 49,
+      "triangles": 64,
+      "open_boundary_edges": 32,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right iris lower glow",
+      "vertices": 49,
+      "triangles": 64,
+      "open_boundary_edges": 32,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right pupil",
+      "vertices": 49,
+      "triangles": 64,
+      "open_boundary_edges": 32,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right catchlight",
+      "vertices": 43,
+      "triangles": 64,
+      "open_boundary_edges": 20,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right small catchlight",
+      "vertices": 39,
+      "triangles": 64,
+      "open_boundary_edges": 12,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right upper lash",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right outer lash tip",
+      "vertices": 13,
+      "triangles": 21,
+      "open_boundary_edges": 3,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": []
+    },
+    {
+      "name": "L2_Right tapered eyebrow",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Right ear",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Gentle open smile",
+      "vertices": 54,
+      "triangles": 65,
+      "open_boundary_edges": 41,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Smile upper teeth",
+      "vertices": 29,
+      "triangles": 49,
+      "open_boundary_edges": 7,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": []
+    },
+    {
+      "name": "L2_Smile lower warmth",
+      "vertices": 45,
+      "triangles": 64,
+      "open_boundary_edges": 24,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Nose soft highlight",
+      "vertices": 59,
+      "triangles": 100,
+      "open_boundary_edges": 16,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Hair unified crown and back",
+      "vertices": 852,
+      "triangles": 1700,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "SHRINKWRAP",
+        "SOLIDIFY",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Hair swept inner fringe",
+      "vertices": 92,
+      "triangles": 180,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Hair left face frame",
+      "vertices": 92,
+      "triangles": 180,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Hair right tucked frame",
+      "vertices": 92,
+      "triangles": 180,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Hair rear flow line 0",
+      "vertices": 17,
+      "triangles": 30,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Hair rear flow line 1",
+      "vertices": 17,
+      "triangles": 30,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Hair rear flow line 2",
+      "vertices": 17,
+      "triangles": 30,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Hair rear flow line 3",
+      "vertices": 17,
+      "triangles": 30,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Hair rear flow line 4",
+      "vertices": 17,
+      "triangles": 30,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Ribbon folded loop -1",
+      "vertices": 47,
+      "triangles": 90,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "SOLIDIFY",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Ribbon tail -1",
+      "vertices": 47,
+      "triangles": 90,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "SOLIDIFY",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Ribbon folded loop 1",
+      "vertices": 47,
+      "triangles": 90,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "SOLIDIFY",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Ribbon tail 1",
+      "vertices": 47,
+      "triangles": 90,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "SOLIDIFY",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Ribbon knot",
+      "vertices": 47,
+      "triangles": 90,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Backpack soft main bag",
+      "vertices": 152,
+      "triangles": 300,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Backpack folded lid",
+      "vertices": 62,
+      "triangles": 120,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Backpack front pocket",
+      "vertices": 62,
+      "triangles": 120,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Backpack cream clasp",
+      "vertices": 62,
+      "triangles": 120,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Backpack fitted shoulder strap -1",
+      "vertices": 62,
+      "triangles": 120,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "SOLIDIFY",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Backpack fitted shoulder strap 1",
+      "vertices": 62,
+      "triangles": 120,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "SUBSURF",
+        "SOLIDIFY",
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Backpack top handle",
+      "vertices": 62,
+      "triangles": 120,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    },
+    {
+      "name": "L2_Skirt hem stitching",
+      "vertices": 52,
+      "triangles": 100,
+      "open_boundary_edges": 0,
+      "edges_with_more_than_two_faces": 0,
+      "zero_area_faces": 0,
+      "editable_modifiers": [
+        "DECIMATE"
+      ]
+    }
+  ],
+  "limits": [
+    "Editable components and material slots are not a final draw-call budget.",
+    "Materials must be consolidated or baked before game export.",
+    "Neutral design only; seated and bicycle deformation require future rig testing.",
+    "No Chromebook runtime performance measurement has been performed.",
+    "Open boundaries on fitted face graphics, hems and shoe openings are intentional.",
+    "Final aesthetic approval belongs to the user / Claude."
+  ]
+}

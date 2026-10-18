@@ -1,0 +1,2 @@
+# Keep local intermediate inspections out of the published approval set.
+/renders/preview_*.png
