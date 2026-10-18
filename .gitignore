@@ -3,3 +3,4 @@ dist/
 .shots/
 .claude/checkpoint/
 .ai/
+*.blend1

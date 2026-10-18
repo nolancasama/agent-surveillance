@@ -17,6 +17,8 @@ Graphics slice B (2026-10-18) adds varied shop roofs, framed recessed windows an
 
 Warm hemisphere/directional lighting, explicit sRGB output with NoToneMapping, a sky gradient and distance fog preserve Lily's distinctive palette. Opaque instanced radial contact shadows and baked building-base shading use no shadow map or post-processing. Static details are merged by landmark; trees and skyline roofs are instanced. Slice B matched counts: wide **443 -> 241 draw calls, 72,068 -> 162,936 triangles**; Lily close-up **110 -> 47 calls, 11,886 -> 67,068 triangles**. Both wide-view budgets are met; pixel ratio remains capped at 1.5. Close-up triangle counts reflect larger merged assemblies surviving culling.
 
+Lily 3D redesign, phase 1 (2026-10-18): a standalone stylised Blender model is in `character-assets/lily/lily.blend`. Front, three-quarter, side and back renders, plus `lily_turnaround.png`, are in `character-assets/lily/renders/`. It is visual only, with no rig, animation or game integration, and the in-game Lily is unchanged. **Next step: user approval of the renders**, then rigging, poly reduction and export (about 226k render triangles today).
+
 ## Run
 
 - `npm run dev` — local development server
