@@ -6,6 +6,7 @@ import { Sfx } from './shared/sfx.js';
 import { createMarketScene } from './scene/market.js';
 import { createAtmosphere } from './scene/atmosphere.js';
 import { createPerson, updatePerson, loadLilyBody, PERSON_HEIGHT } from './scene/people.js';
+import { loadWorkerBody } from './scene/workerBody.js';
 import { AMBIENT_NPCS, BLOOM_SHOPKEEPER, poseAmbientAt } from './sim/ambient.js';
 import { LOOP_SECONDS, poseAt } from './sim/markRoute.js';
 import { createTelephoto } from './camera/telephoto.js';
@@ -70,6 +71,7 @@ const ambientPeople = AMBIENT_NPCS.map(npc => {
   scene.add(object);
   return { npc, object };
 });
+const workerBodyReady = loadWorkerBody(ambientPeople.find(({ npc }) => npc.id === 'lawn_walker').object, PERSON_HEIGHT);
 const shopkeeper = createPerson(personOptions(BLOOM_SHOPKEEPER));
 shopkeeper.name = 'bloom-shopkeeper';
 shopkeeper.userData.isNpc = true;
@@ -230,7 +232,7 @@ function updateHud() {
 async function startMission() {
   briefing.querySelector('button').disabled = true;
   Sfx.getCtx(); // Preserve audio activation from the click while the body loads.
-  await lilyBodyReady;
+  await Promise.all([lilyBodyReady, workerBodyReady]);
   phase = 'surveillance';
   paused = false;
   sceneRevealed = false;

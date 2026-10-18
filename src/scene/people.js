@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { sampleWorkerBody } from './workerBody.js';
 import { createBouquet, createWateringCan, createBike, createScooter } from './personProps.js';
 
 export { createBouquet, createWateringCan, createBike, createScooter };
@@ -331,6 +332,11 @@ export function updatePerson(person, state = {}, time = 0) {
   const p = state.position || state.pos;
   if (p) person.position.set(p.x || 0, p.y || 0, p.z || 0);
   if (Number.isFinite(state.heading)) person.rotation.y = state.heading;
+  if (person.userData.workerBody) {
+    sampleWorkerBody(person.userData.workerBody, state, time);
+    person.visible = state.visible !== false;
+    return person;
+  }
   const raw = state.animationState || state.animation || state.action || 'idle';
   const action = ({ smell: 'smell_flowers', buy: 'buy_flowers', water: 'water_flowers',
     bike_push: 'push_bike', bike_ride: 'ride_bike', pedal: 'ride_bike', scooter: 'ride_scooter',

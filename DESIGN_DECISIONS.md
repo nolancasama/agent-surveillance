@@ -21,6 +21,14 @@ Do NOT record:
 
 Git is the source of truth for detailed code-change history.
 
+## 2026-10-18 - Quaternius worker ambient body
+- Replace only `lawn_walker` with the hard-hat, hi-vis Worker from Quaternius's Ultimate Modular Males pack, provided under CC0 1.0 Universal in `character-assets/npc/worker/LICENSE.txt`. This background pedestrian is outside the three identity decoys and Lily's evidence actions, allowing a distinct ambient silhouette without changing identification cues or routes.
+- `node character-assets/npc/worker/convert-worker.mjs` reproducibly compacts the embedded source into `public/assets/npc-worker.glb` (835,492 bytes) without dependencies. It preserves geometry, nine materials and the 62-joint skeleton while retaining only Walk, Idle and Idle_Neutral; discarded combat clips and their unused buffers are removed.
+- Moving states use Walk; stationary states, including the phone waypoint, use Idle without a phone prop. AnimationMixer actions switch with exclusive weights and sample absolute mission time plus the existing NPC phase offset, so paused frames and arbitrary seeks reproduce the same pose. The measured full stride is about 2.1 game units, matching travel speed 1.2 with approximately .952 native playback rate.
+- The Idle standing pose is normalized to PERSON_HEIGHT (2.09) and grounded using precise skinned bounds; the source already faces local +Z. Converted Lambert materials preserve source colours and skinned meshes bypass frustum culling. The existing person group still owns placement, heading, visibility and its contact shadow.
+- Preload during briefing and await both body loads before reveal. A failed worker load emits one warning and leaves its procedural rig visible. Lily's loader, asset and procedural pose driver remain unchanged, as do all other people and simulation/gameplay logic.
+- Verification: 34 unit tests, build and Lily asset checker pass. `.shots/npc-worker/` records five requested views, wide counts of 229 draw calls / 171,338 triangles, no normal-load page errors/warnings, deterministic repeated/seek poses, and successful delayed-load/one-warning fallback audits. Close evidence cameras are adjusted only by the capture script; production camera controls remain unchanged. Claude retains final aesthetic judgment.
+
 A useful rule:
 
 > If a future developer or AI could reasonably ask, "Why is it designed this way?", record the answer here.
