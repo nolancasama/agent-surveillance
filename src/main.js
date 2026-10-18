@@ -5,7 +5,7 @@ import { Recorder } from './shared/recorder.js';
 import { Sfx } from './shared/sfx.js';
 import { createMarketScene } from './scene/market.js';
 import { createAtmosphere } from './scene/atmosphere.js';
-import { createPerson, updatePerson, PERSON_HEIGHT } from './scene/people.js';
+import { createPerson, updatePerson, loadLilyBody, PERSON_HEIGHT } from './scene/people.js';
 import { AMBIENT_NPCS, BLOOM_SHOPKEEPER, poseAmbientAt } from './sim/ambient.js';
 import { LOOP_SECONDS, poseAt } from './sim/markRoute.js';
 import { createTelephoto } from './camera/telephoto.js';
@@ -46,6 +46,7 @@ const mark = createPerson({ id: 'lily', name: 'Lily' });
 mark.name = 'mark-lily';
 mark.userData.isMark = true;
 scene.add(mark);
+const lilyBodyReady = loadLilyBody(mark);
 
 function personOptions(npc) {
   const appearance = npc.appearance || {};
@@ -226,7 +227,10 @@ function updateHud() {
   hud.setZoomEnabled(!paused);
 }
 
-function startMission() {
+async function startMission() {
+  briefing.querySelector('button').disabled = true;
+  Sfx.getCtx(); // Preserve audio activation from the click while the body loads.
+  await lilyBodyReady;
   phase = 'surveillance';
   paused = false;
   sceneRevealed = false;

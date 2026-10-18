@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { createBouquet, createWateringCan, createBike, createScooter } from './personProps.js';
 
 export { createBouquet, createWateringCan, createBike, createScooter };
@@ -86,6 +87,76 @@ export const LILY_APPEARANCE = Object.freeze({
   skin: '#f2c39c', shirt: '#f4c518', bottoms: '#3972b7', skirt: true,
   hair: '#241a12', hairStyle: 'long', ribbon: '#e74451', backpack: '#3eaf72',
 });
+
+/** Frozen GLB interface; left is the rig's negative-X side. */
+export function rigBoneGroups(rig) {
+  const groups = { pelvis: rig.pelvis, body: rig.body, head: rig.head };
+  for (const [name, limb] of [
+    ['left-arm', rig.leftArm], ['right-arm', rig.rightArm],
+    ['left-leg', rig.leftLeg], ['right-leg', rig.rightLeg],
+  ]) for (const joint of ['upper', 'lower', 'end']) groups[`${name}-${joint}`] = limb[joint];
+  return groups;
+}
+
+/** The asset has identity rest rotations and the same local joint offsets. */
+export function copyRigToBones(rig, bones) {
+  for (const [name, group] of Object.entries(rigBoneGroups(rig))) {
+    bones[name].quaternion.copy(group.quaternion);
+    // Pelvis bobs/sits; copying body/head also preserves any translated poses.
+    if (name === 'pelvis' || name === 'body' || name === 'head') bones[name].position.copy(group.position);
+  }
+}
+
+export function attachLilyBody(person, model) {
+  if (!person.userData.isLily) return;
+  const rig = person.userData.rig;
+  const bones = {};
+  model.traverse(object => { if (object.isBone) bones[object.name] = object; });
+  for (const name of Object.keys(rigBoneGroups(rig))) {
+    if (!bones[name]) throw new Error(`Lily GLB is missing bone ${name}`);
+  }
+  const materials = new Map();
+  model.traverse(object => {
+    if (!object.isMesh) return;
+    const convert = source => {
+      if (!materials.has(source)) {
+        if (source.map) source.map.colorSpace = THREE.SRGBColorSpace;
+        materials.set(source, new THREE.MeshLambertMaterial({
+          // The dedicated matte locks primitive exports white COLOR_0 and no
+          // base-colour factor; restore its frozen hair palette at conversion.
+          color: source.name === 'Lily_Game_Hair' ? LILY_APPEARANCE.hair : source.color,
+          map: source.map, vertexColors: source.vertexColors,
+          side: source.side, transparent: source.transparent, opacity: source.opacity,
+          alphaTest: source.alphaTest, depthWrite: source.depthWrite,
+        }));
+      }
+      return materials.get(source);
+    };
+    object.material = Array.isArray(object.material) ? object.material.map(convert) : convert(object.material);
+    if (object.isSkinnedMesh) object.frustumCulled = false;
+  });
+  copyRigToBones(rig, bones);
+  person.add(model); // Inherits baseScale once, alongside the procedural rig/props.
+  rig.skinBones = bones;
+  // Hide the body meshes themselves, never a joint or a hand-held prop subtree.
+  for (const group of Object.values(rigBoneGroups(rig))) {
+    for (const child of group.children) {
+      if (child.isMesh && ![rig.bouquet, rig.wateringCan, rig.phone, rig.money, rig.shoppingBag].includes(child)) {
+        child.visible = false;
+      }
+    }
+  }
+}
+
+/** Start during briefing; on failure the original body remains usable. */
+export async function loadLilyBody(person) {
+  try {
+    const gltf = await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}assets/lily.glb`);
+    attachLilyBody(person, gltf.scene);
+  } catch (error) {
+    console.warn('Lily GLB could not be loaded; keeping the procedural body.', error);
+  }
+}
 
 function createHead(c) {
   const pieces = [part(G.head, c.skin, [0, 0, 0], [.255, .275, .225]),
@@ -212,7 +283,7 @@ export function createPerson(options = {}) {
   person.add(waterStream);
   const bike = lily || options.bike ? createBike() : new THREE.Group(); person.add(bike);
   const scooter = options.scooter ? createScooter() : new THREE.Group(); person.add(scooter);
-  person.userData = { isPerson: true, personId: options.id || null, baseScale: options.scale ?? 1,
+  person.userData = { isPerson: true, isLily: lily, personId: options.id || null, baseScale: options.scale ?? 1,
     rig: { pelvis, body, torso, head, leftArm, rightArm, leftLeg, rightLeg, hips,
       neutralSkirt: hips.geometry, activeSkirt,
       bouquet, wateringCan, waterStream, phone, money, shoppingBag, bike, scooter },
@@ -421,6 +492,7 @@ export function updatePerson(person, state = {}, time = 0) {
     }
     r.waterStream.instanceMatrix.needsUpdate = true;
   }
+  if (r.skinBones) copyRigToBones(r, r.skinBones);
   person.visible = state.visible !== false;
   return person;
 }
