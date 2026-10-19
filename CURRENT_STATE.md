@@ -3,53 +3,44 @@
 ## Status
 The Agent Surveillance MVP is implemented end to end: briefing, deterministic 210-second market surveillance, telephoto controls, ten-slot photo evidence ledger with refill, neutral photo review, spoken NAME / LIKES / CAN deduction with picture fallback, and mission report.
 
-The HUD now includes Lily's responsive target dossier and a single MARK TARGET / TAKE PHOTO action. Students must identify Lily manually before taking photos. Wrong marks are free, and identification rescue hints name only her current route area. After identification, TARGET IN VIEW reflects framing and building visibility, independently of evidence events.
+The HUD includes Lily's dossier and a single MARK TARGET / TAKE PHOTO action. Students must identify Lily manually before taking photos. Wrong marks are free, and rescue hints name only her current route area. After identification, TARGET IN VIEW reflects framing and building visibility, independently of evidence events.
 
-The automatic Field Notebook records only photographed, visible Lily activities, including filler activities, with one entry per activity and references to ledger photos. N or FIELD NOTEBOOK opens a paused notebook during surveillance; it is also available read-only during review and deduction. Shared evidence configuration supplies private category/strength metadata. The ledger still determines scoring, limits and refill. A version 1 JSON mission export is ready for future Agent Briefing integration.
+The automatic Field Notebook records only photographed, visible Lily activities, with one entry per activity and references to ledger photos. N or FIELD NOTEBOOK opens a paused notebook during surveillance; it is also available read-only during review and deduction. A version 1 JSON mission export is ready for future Agent Briefing integration.
 
-Graphics slice A (2026-10-18) gives Lily, all 12 deterministic background NPCs and the BLOOM shopkeeper one shared rounded cartoon rig with connected elbows/knees, expressive faces, varied hair and clothes, and blended poses. Lily keeps the dossier colours and accessories; the yellow-shirt, long-hair and scooter decoys remain distinct. Walking plants feet; hands meet bike/scooter bars; riding legs follow rotating pedals; buying shows money followed by flowers; watering uses a held, tilted can and a sustained nozzle-to-soil stream. Vehicles and hand props are procedural merged geometry. Environment geometry, lighting, route sampling, event/activity IDs and mission flow are unchanged.
+Graphics: every other character uses the shared rounded procedural rig (slice A); the market has the slice B shops, props, instanced trees, warm lighting and contact shadows. The worker pedestrian (`lawn_walker`) is the CC0 Quaternius Worker (`public/assets/npc-worker.glb`, `character-assets/npc/worker/convert-worker.mjs`).
 
-Before phase 2B, procedural Lily used 13 visible body meshes normally and 20 with her bicycle/basket flowers. Slice A matched wide-view render counts changed from 496 calls / 17,820 triangles to 443 / 72,068; Lily close-up from 121 / 4,406 to 110 / 11,886. Extra triangles provide rounded silhouettes and detail; merged assemblies reduce draw calls. The pixel-ratio cap remains 1.5. Shared photo/identity projection uses measured neutral height 2.09 and torso centre 1.24, preserving every evidence and marking threshold.
+## Lily (2026-10-19)
+- Body: child-proportioned CC0 Quaternius character, `public/assets/lily-child.glb`, driven by `src/scene/lilyBody.js` (authored Walk/Run/Idle; IK retargeting for bike, sitting, bending and held props). Procedural Lily remains the load-failure fallback.
+- Polished model: smooth shading, hands x0.8, shoes 0.8 long, continuous backpack straps, level skirt waistband over the shirt, rounder skirt hem, and a face matched to `public/assets/lily.png` (almond eyes, soft arched brows, small nose, open smile, blush). 7,724 triangles (was 7,262), one material, 0.54 MB (was 1.12 MB).
+- Pipeline (see `character-assets/lily-quaternius/README.md`): `lily_q.blend` (editable, already polished) -> `scripts/build_lily_game.py` -> `lily_q_game.blend` + `lily-child.glb`. `scripts/polish_lily.py` documents and reproduces the polish from the pre-polish commit; it refuses to run twice.
+- Staging: stops sit beside props, not inside them; Lily faces where she walks and turns smoothly; she faces what she is doing (side-on smelling, face to face with the shopkeeper, who turns to her, sitting on her own cafe chair and a camera-facing bench, watering from behind the bed). Her bike, ridden and parked, is child-sized (0.8). Segment durations, event windows and event IDs are unchanged.
+- Renders: `character-assets/lily-quaternius/renders/` (turnaround, close-ups, walk frames and video), `renders/polish/` (before/after), `renders/in-game/` (every action and the wide/medium/high zoom levels).
 
-The shutter remains disabled until the revealed scene has rendered a full-opacity frame. Test-only controls remain exposed as `window.__surv` only when the URL includes `?test`.
-
-Graphics slice B (2026-10-18) adds varied shop roofs, framed recessed windows and doors, scalloped striped awnings, readable canvas signs and individual shop displays. The environment now has instanced layered trees, petalled flowers with leaves, café umbrellas/chairs, slatted benches with armrests, a tiered fountain, upright bike hoops, patterned paving, path edging, lamps, planters and bins. Shop body dimensions/positions and all eight building-only visibility occluders are preserved; the fountain retains its previous upper height for the bike lap. Lily's watering stream is brighter, thicker and continuous while pouring, and the long-hair decoy walks with a symmetric skirt centred on her hips.
-
-Warm hemisphere/directional lighting, explicit sRGB output with NoToneMapping, a sky gradient and distance fog preserve Lily's distinctive palette. Opaque instanced radial contact shadows and baked building-base shading use no shadow map or post-processing. Static details are merged by landmark; trees and skyline roofs are instanced. Slice B matched counts: wide **443 -> 241 draw calls, 72,068 -> 162,936 triangles**; Lily close-up **110 -> 47 calls, 11,886 -> 67,068 triangles**. Both wide-view budgets are met; pixel ratio remains capped at 1.5. Close-up triangle counts reflect larger merged assemblies surviving culling.
-
-Superseded Lily bodies: the 15-joint phase 2A/2B `lily.glb` (built from `character-assets/lily/`) was removed from `public/` on 2026-10-19; its history is in DESIGN_DECISIONS. Latest verification (Quaternius body): `npm test` 39/39, `npm run build`, `npm run check:lily`; `.shots/lily-child/` holds 34 in-game captures (no page errors/warnings; wide 228 calls / 167,314 triangles).
-
-Worker ambient body (2026-10-18): only `lawn_walker` now uses the CC0 Quaternius hard-hat/hi-vis Worker. `public/assets/npc-worker.glb` is 835,492 bytes with Walk, Idle and Idle_Neutral only; reproduce with `node character-assets/npc/worker/convert-worker.mjs`. Its own AnimationMixer samples absolute mission time, maps travel to Walk and stationary/phone waypoints to Idle, and matches the 1.2 travel speed using a measured 2.1-unit stride. The model stands 2.09 units high with grounded feet and +Z facing, uses Lambert materials, and retains the existing visibility/contact shadow. Briefing preloads and waits for it alongside Lily; one warning and the original procedural body handle loading failure. All other characters, Lily assets, routes and gameplay remain unchanged. Unit verification passes 34/34; `npm run build` and `npm run check:lily` pass (existing Vite bundle-size advisory remains).
-
-Worker visual verification: `.shots/npc-worker/` contains walking, idle, phone-waypoint, close-up and wide-with-Lily screenshots plus `metrics.json`; reproduce with `.shots/capture-npc-worker.cjs` and the supplied Playwright NODE_PATH/SwiftShader setup. Wide view: **229 draw calls / 171,338 triangles**. Normal-load browser errors/warnings: none. Delayed loading keeps briefing pending; forced 404 reveals the procedural fallback with exactly one warning and no page errors. Repeated-time/backward-seek bone poses match. Root `debug.log` is absent. Claude's final aesthetic judgment remains pending.
-
-Lily Quaternius body (2026-10-19): Lily in game is now the child-proportioned CC0 Quaternius character (`public/assets/lily-child.glb`, driven by `src/scene/lilyBody.js`). Walking plays the authored Walk/Run clips synced to distance travelled; standing uses Idle; bike, sitting, bending, watering, phone, buying and push-bike reuse the procedural pose via IK so props and the bike still line up. No hair bow; briefing/dossier text no longer mentions a ribbon. Source: `character-assets/lily-quaternius/lily_q.blend` (editable) and `lily_q_game.blend` (export copy). Unreviewed Lily v2 rig work from a stopped Codex run sits in `git stash` ("codex lily-v2 rig work").
+## Verification (2026-10-19)
+`npm test` 42/42 (new route clearance, facing and no-slide tests), `npm run build`, `npm run check:lily`, `npm run test:e2e`. Capture pass `.shots/lily-polish-final/` (local): no page errors or warnings; smell, buy, water and ride photos score, push stays weak; forced 404 shows the procedural fallback with one warning. Wide view 227 calls / 167,884 triangles (was 228 / 167,314).
 
 ## Next Steps
-
-1. User checks the live walk; possible polish: bike hands ~5 cm short of grips, hair is rigid, front backpack straps have small gaps.
-2. Decide whether to drop the stashed v2 rig work (`git stash drop`) now that Lily uses the Quaternius body.
+1. User reviews the polished Lily and the new staging in the running game.
+2. Decide whether to drop the stashed, unreviewed v2 rig work (`git stash drop`, "codex lily-v2 rig work").
 3. Chromebook frame-rate check remains outstanding.
+4. Optional: rebalance segment durations so the run-paced legs walk (needs a decision; it moves event windows).
 
 ## Run
-
-- `npm run dev` — local development server
-- `npm test` — unit tests for the ledger, route/activity coverage, target selection/visibility, notebook/export, and factual answer evaluation
-- `npm run build` — production build in `dist/`
-- `npm run test:e2e` — Playwright acceptance test against an existing `dist/` build; screenshots go to `.shots/`
+- `npm run dev` - local development server
+- `npm test` - unit tests (ledger, route timing/clearance/facing, target selection/visibility, notebook/export, Lily body, answer evaluation)
+- `npm run build` - production build in `dist/`
+- `npm run test:e2e` - Playwright acceptance test against an existing `dist/` build (PowerShell: `$env:NODE_PATH='C:/Users/nolan/recipe-tester/node_modules'`)
+- `npm run check:lily` - GLB skeleton, clips and budget check
+- In-game review captures: `LILY_PASS=<name> node .shots/capture-lily-polish.cjs` with the same NODE_PATH (local, git-ignored)
 
 ## Known gaps
-
-- The prior procedural Lily skirt/thigh clipping is no longer apparent in the phase 2B sampled bike phases, including t=160 and t=162. Claude's final aesthetic review of the integrated model and Chromebook frame-rate measurement remain pending.
-
-- Slice B verification passed: `npm test` (27/27) and `npm run build`. All 23 requested matched views and renderer metrics are in `.shots/gfx-b-before/` and `.shots/gfx-b-after/`; extra after frames show sustained watering, backpack/phone and the bike lap. `.shots/capture-gfx-b.cjs` repeats the captures against dist with the supplied Playwright NODE_PATH and SwiftShader. Focused photo checks recognise smell/buy/water/ride and retain weak pushing; the audit confirms eight real-building occluders. Browser page errors: none. No full e2e/smoke/browser suite was run for this slice. Claude's final aesthetic review and Chromebook frame-rate measurement remain pending.
-
-- No Agent Briefing import UI or external integration is included; `exportMission(ledger, notebook)` supplies the pure JSON-serialisable boundary.
-- Graphics slice A verification passed: `npm test` (27 tests), `npm run build`, and `npm run test:e2e` using `NODE_PATH=C:/Users/nolan/recipe-tester/node_modules`. The e2e run includes identification, evidence thumbnails, notebook pause/notes, deduction and report screenshots. Matched baseline/after captures, exact camera/time setups and renderer metrics are saved in `.shots/gfx-before/` and `.shots/gfx-after/`; extra after frames cover phone, talk, walking/backpack, watering phases and pedalling. `.shots/capture-gfx.cjs` repeats the screenshot pass with SwiftShader. Browser errors: none. Final aesthetic review by Claude and Chromebook frame-rate measurement remain pending.
-
-- Browser speech recognition and microphone permissions vary by device. Unsupported or unverified speech intentionally uses the required three-choice fallback.
-- The production build emits Vite's advisory warning that the single three.js bundle exceeds 500 kB uncompressed; it builds successfully and adds no runtime dependencies.
+- Fixed segment durations make three legs run-paced (about 2.5-3 units/s): cafe to BOOKS/BLOOM, BLOOM to the bench, and bench to ROBOTS. ROBOTS is looked at from the middle of the square, because its window is out of reach in that segment.
+- Riding seen from behind: the back of the skirt fans over the saddle (no clipping).
+- Hair is smooth-shaded but still strand-blocky up close; subdividing it would cost about 5,400 triangles.
+- Ambient NPCs still snap their heading at corners; only Lily's turns are smoothed.
+- No Agent Briefing import UI or external integration; `exportMission(ledger, notebook)` supplies the JSON boundary.
+- Browser speech recognition and microphone permissions vary by device; unsupported speech uses the three-choice fallback.
+- The production build emits Vite's advisory that the three.js bundle exceeds 500 kB uncompressed.
 
 ## Test hooks
-
-Only `?test` exposes `window.__surv`. Existing state, route, camera, shutter, finish, ledger and speech hooks remain. New hooks: `markTarget()` (deterministic cooldown bypass), `aimAtPerson(id, zoom)`, `people()` (IDs including Lily, 12 ambient NPCs and BLOOM shopkeeper), `identified()`, `notebook()` (entry snapshots), and `exportMission()` (versioned JSON data). `shoot()` always rejects before identification. `state().paused` and `state().time` expose notebook pause behavior.
+Only `?test` exposes `window.__surv`: state, route, camera, shutter, finish, ledger and speech hooks, plus `markTarget()`, `aimAtPerson(id, zoom)`, `people()`, `identified()`, `notebook()` and `exportMission()`. `shoot()` always rejects before identification. `state().paused` and `state().time` expose notebook pause behaviour.
