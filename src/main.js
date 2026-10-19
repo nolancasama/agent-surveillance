@@ -207,9 +207,13 @@ function updateWorld() {
       visible: pose.animation !== 'enter_shop' || (missionTime % 4) < 2,
     }, missionTime + npc.phaseOffset);
   }
+  // The keeper turns to Lily for the sale and back to the square once she lifts the flowers.
+  const keeper = BLOOM_SHOPKEEPER.position, progress = markState.segmentProgress;
+  const facingLily = markState.eventId === 'buy_flowers'
+    ? THREE.MathUtils.smoothstep(progress, 0, .06) * (1 - THREE.MathUtils.smoothstep(progress, .62, .7)) : 0;
   updatePerson(shopkeeper, {
-    position: BLOOM_SHOPKEEPER.position,
-    heading: 0,
+    position: keeper,
+    heading: facingLily * Math.atan2(markState.position.x - keeper.x, markState.position.z - keeper.z),
     animation: markState.eventId === 'buy_flowers' ? 'sell_flowers' : 'idle',
     segmentProgress: markState.segmentProgress,
   }, missionTime);

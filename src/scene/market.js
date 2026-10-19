@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createBike, createWateringCan } from './people.js';
+import { CHILD_BIKE_SCALE } from './personProps.js';
 
 const STATIC_GEOMETRY = Object.freeze({
   shopBody: new THREE.BoxGeometry(9, 7, 6),
@@ -392,6 +393,15 @@ function createCafeSet(x, z) {
     }
     cafe.add(table);
   }
+  // Lily's chair behind the open centre table, turned to face it (markRoute CAFE_SEAT).
+  const seat = new THREE.Group();
+  seat.rotation.y = 0.25;
+  const chair = mesh(STATIC_GEOMETRY.chair, '#ba594b', 'cafe-chair');
+  chair.position.set(0, 0.48, -0.14);
+  seat.add(chair);
+  for (const dx of [-.17, .17]) for (const dz of [-.31, .03]) bar(seat, '#51645e', [dx, .02, dz], [dx, .49, dz], .035);
+  box(seat, '#b85e50', [0, .76, -.34], [.48, .55, .09]);
+  cafe.add(seat);
   return batchStatic(cafe);
 }
 
@@ -661,18 +671,21 @@ export function createMarketScene(sceneOrOptions = {}, maybeOptions = {}) {
   props.flowerbed = createFlowerbed();
   props.flowerbed.position.set(-8, 0, 6);
   props.wateringCan = createWateringCan();
-  props.wateringCan.position.set(-6.25, 0.82, 6);
+  // On the rear rim beside Lily's watering spot, within reach of her right hand.
+  props.wateringCan.position.set(-7.62, 0.82, 4.95);
   props.wateringCan.rotation.y = -0.4;
   props.bloomBuckets = createBloomBuckets();
   props.bloomBuckets.position.set(4, 0, -19);
   props.bikeRack = createBikeRack();
   props.bikeRack.position.set(15, 0, 12);
-  props.parkedBike = createBike({ color: '#d94a52' });
+  // Lily's bike when she is not using it: the same child size, so the hand-over is seamless.
+  props.parkedBike = createBike({ color: '#d94a52', scale: CHILD_BIKE_SCALE });
   props.parkedBike.position.set(15, 0, 12.2);
   props.parkedBike.rotation.y = Math.PI / 2;
   props.cafe = createCafeSet(-14, -12);
   props.benches = [
-    createBench(6, 8, -0.35), createBench(-3, -9, 0.25),
+    // Square benches face the observation post, matching how people sit on them.
+    createBench(6, 8, Math.PI - 0.35), createBench(-3, -9, Math.PI + 0.25),
     createBench(-8, 35, Math.PI / 2), createBench(8, 49, -Math.PI / 2),
   ];
   root.add(

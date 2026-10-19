@@ -30,7 +30,7 @@ const TEMPLATES = [
   {
     id: 'cafe_friend', role: 'cafe_friend', behavior: 'talk',
     appearance: { skin: '#8b5b3f', hairColor: '#17120f', hair: 'curly', shirt: '#37b7d8', bottom: '#303a56' },
-    speed: 0.9, route: [p(-12.5, -11.2, 11, 'talk'), p(-14.5, -10.5, 9, 'gesture')],
+    speed: 0.9, route: [p(-12.5, -11.2, 11, 'talk', true), p(-12.35, -11, 9, 'gesture', true)],
   },
   {
     id: 'yellow_short', role: 'decoy_yellow_shirt', behavior: 'wander',
@@ -60,7 +60,7 @@ const TEMPLATES = [
   {
     id: 'bench_sitter', role: 'pedestrian', behavior: 'sit',
     appearance: { skin: '#f0c8a0', hairColor: '#6a3f23', hair: 'bob', shirt: '#51a6a6', bottom: '#6b4d3a' },
-    speed: 0.8, route: [p(-3, -9, 15, 'sit'), p(-7, -5, 3), p(-2, -4, 3)],
+    speed: 0.8, route: [p(-3, -9, 15, 'sit', true), p(-7, -5, 3), p(-2, -4, 3)],
   },
   {
     id: 'bakery_shopper', role: 'pedestrian', behavior: 'shop',

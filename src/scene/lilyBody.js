@@ -11,6 +11,7 @@ export const LILY_BONES = Object.freeze(['Root', 'Body', 'Hips', 'Abdomen', 'Tor
   'UpperArmL', 'LowerArmL', 'WristL', 'UpperArmR', 'LowerArmR', 'WristR',
   'UpperLegL', 'LowerLegL', 'FootL', 'UpperLegR', 'LowerLegR', 'FootR']);
 const BLEND_SECONDS = .35;
+const GRIP_WRIST = new THREE.Vector3(0, .025, -.04);
 
 /** Locomotion uses authored clips; everything else stands on Idle. */
 export function lilyClipName(frame = {}, state = {}) {
@@ -204,7 +205,8 @@ export function poseLilyChildBody(person, state = {}, time = 0) {
       const excess = Math.max(...reaching.map(limb => {
         const shoulder = world(B[limb.upper]);
         const reach = shoulder.distanceTo(world(B[limb.lower])) + world(B[limb.lower]).distanceTo(world(B[limb.end]));
-        return shoulder.distanceTo(world(limb.proc.end)) - reach * .99;
+        // Stop short of full reach so the elbows keep a slight bend.
+        return shoulder.distanceTo(world(limb.proc.end)) - reach * .94;
       }));
       if (excess <= 0) break;
       const step = Math.min(.06, excess * .6);
@@ -226,6 +228,8 @@ export function poseLilyChildBody(person, state = {}, time = 0) {
       : procedural;
     if (!drive) continue;
     limb.proc.end.getWorldPosition(target);
+    // On the bars the wrist sits just behind and above the grip, so the palm rests on it.
+    if (limb.arm && frame.bars) target.add(_v.copy(GRIP_WRIST).applyQuaternion(personQ));
     limb.proc.lower.getWorldPosition(pole);
     // Bend toward the procedural elbow/knee, pushed outward along its own offset.
     pole.add(_v.copy(pole).sub(limb.proc.upper.getWorldPosition(_a)).multiplyScalar(.5));

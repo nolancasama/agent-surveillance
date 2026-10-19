@@ -3,7 +3,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { sampleWorkerBody } from './workerBody.js';
 import { poseLilyChildBody } from './lilyBody.js';
-import { createBouquet, createWateringCan, createBike, createScooter } from './personProps.js';
+import { createBouquet, createWateringCan, createBike, createScooter, CHILD_BIKE_SCALE } from './personProps.js';
 
 export { createBouquet, createWateringCan, createBike, createScooter };
 // Measured neutral silhouette, including the hair crown. Shared with projection.
@@ -212,7 +212,7 @@ export function createPerson(options = {}) {
   waterStream.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   waterStream.frustumCulled = false;
   person.add(waterStream);
-  const bike = lily || options.bike ? createBike() : new THREE.Group(); person.add(bike);
+  const bike = lily || options.bike ? createBike({ scale: lily ? CHILD_BIKE_SCALE : 1 }) : new THREE.Group(); person.add(bike);
   const scooter = options.scooter ? createScooter() : new THREE.Group(); person.add(scooter);
   person.userData = { isPerson: true, isLily: lily, personId: options.id || null, baseScale: options.scale ?? 1,
     rig: { pelvis, body, torso, head, leftArm, rightArm, leftLeg, rightLeg, hips,
@@ -286,12 +286,18 @@ export function updatePerson(person, state = {}, time = 0) {
   const walkingDrape = walk && person.userData.personId !== 'orange_long_hair';
   if (r.activeSkirt) r.hips.geometry = walkingDrape || ride || sitting ? r.activeSkirt : r.neutralSkirt;
   let sit = sitting ? 1 : 0;
-  if (action === 'sit_down') sit = smooth(0, .16, progress);
-  if (action === 'stand_up') sit = 1 - smooth(.88, 1, progress);
+  // Route phases supply their own timing; lower or rise over at most 1.2 seconds.
+  const phaseElapsed = state.phaseElapsed, phaseDuration = state.phaseDuration;
+  const timed = Number.isFinite(phaseElapsed) && phaseDuration > 0;
+  if (action === 'sit_down') sit = timed ? smooth(0, Math.min(1.2, phaseDuration), phaseElapsed) : smooth(0, .16, progress);
+  if (action === 'stand_up') sit = timed ? 1 - smooth(Math.max(0, phaseDuration - 1.2), phaseDuration, phaseElapsed)
+    : 1 - smooth(.88, 1, progress);
   const lean = smell ? .72 * smooth(0, .2, progress) * (1 - smooth(.78, 1, progress))
     : water ? .17 : ['tie_shoe', 'lock_bike'].includes(action) ? .65 : ride ? .55 : 0;
+  // A smaller bike lowers the saddle (top at .98 in bike space) and brings the bars closer.
+  const bikeScale = person.userData.isLily ? CHILD_BIKE_SCALE : 1;
   const values = [walk ? .012 * (1 - Math.cos(stride * 2)) : .008 * Math.sin(phase * 2),
-    -.30 * sit + (ride ? .13 : scooter ? .08 : 0), lean,
+    -.30 * sit + (ride ? .13 - .98 * (1 - bikeScale) : scooter ? .08 : 0), lean,
     walk ? Math.sin(stride) * .50 : -.05, walk ? -Math.sin(stride) * .50 : -.05,
     walk ? -Math.sin(stride) * .40 : -1.30 * sit, walk ? Math.sin(stride) * .40 : -1.30 * sit,
     walk ? Math.max(0, Math.sin(stride)) * .65 : 1.35 * sit,
@@ -303,7 +309,7 @@ export function updatePerson(person, state = {}, time = 0) {
     for (let i = 0; i < values.length; i++) values[i] = THREE.MathUtils.lerp(r.pose[i], values[i], blend);
   }
   r.pose = values; r.lastTime = time;
-  r.pelvis.position.set(0, .92 + values[0] + values[1] - (walk ? .035 : 0), ride ? -.28 : 0);
+  r.pelvis.position.set(0, .92 + values[0] + values[1] - (walk ? .035 : 0), ride ? -.28 * bikeScale : 0);
   r.pelvis.rotation.z = walk ? Math.sin(stride) * .025 : Math.sin(phase * 1.4) * .012;
   r.body.rotation.set(values[2], 0, 0);
   r.head.rotation.set(smell || water || action.includes('phone') ? .15 : 0,
@@ -323,12 +329,15 @@ export function updatePerson(person, state = {}, time = 0) {
   r.bike.visible = ride || action === 'push_bike' || enabled(props, 'bike');
   r.scooter.visible = scooter || enabled(props, 'scooter');
   if (r.bike.visible && !r.bike.userData.pedal) {
-    person.remove(r.bike); r.bike = createBike(); person.add(r.bike);
+    person.remove(r.bike); r.bike = createBike({ scale: bikeScale }); person.add(r.bike);
   }
   if (r.scooter.visible && !r.scooter.userData.wheels) {
     person.remove(r.scooter); r.scooter = createScooter(); person.add(r.scooter);
   }
-  r.bike.position.set(action === 'push_bike' ? .48 : 0, 0, action === 'push_bike' ? -.26 : 0);
+  // Standing chores keep the bike beside her right hip, where the parked bike stands.
+  const besideBike = ['stow_bouquet', 'lock_bike'].includes(action) ? .65
+    : action === 'dismount' ? .65 * smooth(.15, .85, timed ? phaseElapsed / phaseDuration : progress / .2) : 0;
+  r.bike.position.set(action === 'push_bike' ? .48 : besideBike, 0, action === 'push_bike' ? -.26 : 0);
   if (r.bike.userData.basketBouquet) r.bike.userData.basketBouquet.visible = enabled(props, 'basket_bouquet');
   if (r.bike.visible) r.bouquet.visible = false;
   if (r.bike.visible && walk && !ride) r.bike.userData.spin(phase * 1.3);
@@ -348,10 +357,9 @@ export function updatePerson(person, state = {}, time = 0) {
     leftTarget.set(-.10, 1.25 + values[1], .30); leftIK = true;
   }
   if (buy) {
-    // The keeper stands behind Lily. Reach back to pay/receive, then lift the flowers.
-    const receive = smooth(.34, .62, progress);
-    rightTarget.set(.48 - receive * .15, 1.30 + receive * .13, -.36 + receive * .69); rightIK = true;
-    r.head.rotation.y = progress < .62 ? -.3 : 0;
+    // Lily faces the keeper: hand money across, take the flowers, then lift them as she turns.
+    const lift = smooth(.62, .76, progress);
+    rightTarget.set(.16 + lift * .09, 1.22 + lift * .2, .44 - lift * .14); rightIK = true;
   } else if (action === 'sell_flowers') {
     leftTarget.set(-.30, 1.18, .43); rightTarget.set(.28, 1.30, .52);
     leftIK = rightIK = true;
@@ -368,12 +376,15 @@ export function updatePerson(person, state = {}, time = 0) {
   if (ride || action === 'push_bike' || scooter) {
     const bx = action === 'push_bike' ? .48 : 0;
     const bz = action === 'push_bike' ? -.26 : 0;
-    leftTarget.set(bx - .28, scooter ? 1.38 : 1.42, (scooter ? .40 : .60) + bz);
-    rightTarget.set(bx + .28, scooter ? 1.38 : 1.42, (scooter ? .40 : .60) + bz);
+    // Bar positions in bike space scale with the bike; riders hold the grip centres.
+    const s = scooter ? 1 : bikeScale, grip = scooter ? .28 : .24;
+    leftTarget.set(bx - grip * s, (scooter ? 1.38 : 1.42) * s, (scooter ? .40 : .60) * s + bz);
+    rightTarget.set(bx + grip * s, (scooter ? 1.38 : 1.42) * s, (scooter ? .40 : .60) * s + bz);
     leftIK = rightIK = true;
     if (action === 'push_bike') {
-      // Near hand steers; far hand meets the near section of the crossbar.
-      rightTarget.x = bx - .08;
+      // The near (right) hand steers by the near grip; the far arm swings with the walk.
+      rightTarget.copy(leftTarget);
+      leftIK = false;
     }
   }
   if (leftIK) reach(person, r.leftArm, leftTarget, [-.6, -.3, -.4]);
@@ -383,7 +394,7 @@ export function updatePerson(person, state = {}, time = 0) {
   if (ride) {
     const feet = r.bike.userData.pedal(phase * 5);
     for (const [i, leg] of [r.leftLeg, r.rightLeg].entries()) {
-      reach(person, leg, feet[i].clone().add(point(0, .113, -.055)), [0, 0, 1]);
+      reach(person, leg, feet[i].clone().multiplyScalar(bikeScale).add(point(0, .113, -.055)), [0, 0, 1]);
       heldLevel(leg);
     }
     r.bike.userData.spin(phase * 3.2);
@@ -428,7 +439,8 @@ export function updatePerson(person, state = {}, time = 0) {
     }
     r.waterStream.instanceMatrix.needsUpdate = true;
   }
-  r.frame = { walk, ride, scooter, sit: values[1] < 0 ? -values[1] / .30 : 0, lean: values[2], leftIK, rightIK };
+  r.frame = { walk, ride, scooter, sit: !ride && values[1] < 0 ? -values[1] / .30 : 0, lean: values[2], leftIK, rightIK,
+    bars: ride || action === 'push_bike' };
   if (r.childBody) poseLilyChildBody(person, state, time);
   person.visible = state.visible !== false;
   return person;

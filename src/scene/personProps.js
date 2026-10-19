@@ -131,9 +131,14 @@ function bikeWheel(radius = 0.42, scooter = false) {
   return wheel;
 }
 
-export function createBike({ color = '#d94a52', basket = true } = {}) {
+// Lily's bike (ridden and parked) is child-sized so her bars sit below her shoulders.
+export const CHILD_BIKE_SCALE = 0.8;
+
+/** Geometry is authored at adult size in bike space; `scale` sizes the whole bike. */
+export function createBike({ color = '#d94a52', basket = true, scale = 1 } = {}) {
   const bike = new THREE.Group();
   bike.name = 'bike';
+  bike.scale.setScalar(scale);
   bike.add(baked(`bike-frame:${color}:${basket}`, (parts) => {
     const rear = [0, 0.44, -0.74];
     const front = [0, 0.44, 0.78];
