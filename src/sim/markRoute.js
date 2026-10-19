@@ -199,7 +199,7 @@ function activityAt(segment, progress) {
 }
 
 function samplePath(path, progress) {
-  if (path.length === 1) return { position: { ...path[0] }, heading: 0 };
+  if (path.length === 1) return { position: { ...path[0] }, heading: 0, total: 0 };
 
   const lengths = [];
   let total = 0;
@@ -228,6 +228,7 @@ function samplePath(path, progress) {
       z: from.z + (to.z - from.z) * ratio,
     },
     heading: Math.atan2(to.x - from.x, to.z - from.z),
+    total,
   };
 }
 
@@ -250,6 +251,9 @@ export function poseAt(t) {
     segmentId: segment.id,
     segmentProgress: progress,
     position: sampled.position,
+    // Distance along this segment's path and its constant travel speed (render-only).
+    travelDistance: Math.min(1, Math.max(0, progress)) * sampled.total,
+    travelSpeed: sampled.total / segment.duration,
     heading: Number.isFinite(segment.facing) ? segment.facing : sampled.heading,
     animation: phaseValue(segment.animationPhases, progress, segment.animation || 'idle'),
     activityId: activityAt(segment, progress),

@@ -4,4 +4,6 @@ dist/
 .claude/checkpoint/
 .ai/
 *.blend1
+# Extracted CC0 Quaternius pack (re-extract from "humanoid assets.zip")
+character-assets/lily-quaternius/source/
 __pycache__/

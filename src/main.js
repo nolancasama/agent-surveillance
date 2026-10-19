@@ -5,8 +5,9 @@ import { Recorder } from './shared/recorder.js';
 import { Sfx } from './shared/sfx.js';
 import { createMarketScene } from './scene/market.js';
 import { createAtmosphere } from './scene/atmosphere.js';
-import { createPerson, updatePerson, loadLilyBody, PERSON_HEIGHT } from './scene/people.js';
+import { createPerson, updatePerson, PERSON_HEIGHT } from './scene/people.js';
 import { loadWorkerBody } from './scene/workerBody.js';
+import { loadLilyChildBody } from './scene/lilyBody.js';
 import { AMBIENT_NPCS, BLOOM_SHOPKEEPER, poseAmbientAt } from './sim/ambient.js';
 import { LOOP_SECONDS, poseAt } from './sim/markRoute.js';
 import { createTelephoto } from './camera/telephoto.js';
@@ -47,7 +48,7 @@ const mark = createPerson({ id: 'lily', name: 'Lily' });
 mark.name = 'mark-lily';
 mark.userData.isMark = true;
 scene.add(mark);
-const lilyBodyReady = loadLilyBody(mark);
+const lilyBodyReady = loadLilyChildBody(mark, PERSON_HEIGHT);
 
 function personOptions(npc) {
   const appearance = npc.appearance || {};
@@ -122,7 +123,7 @@ function makeBriefing() {
       <div>
         <p class="eyebrow">Agent briefing · File 006</p>
         <h1>Find Lily</h1>
-        <p class="briefing-card__description">Your mark is Lily. Look for a yellow shirt, long dark hair, a blue skirt, a small red hair ribbon, and a green backpack.</p>
+        <p class="briefing-card__description">Your mark is Lily. Look for a yellow shirt, long dark hair, a blue skirt, and a green backpack.</p>
         <p class="briefing-card__description">Find Lily from the window. Aim at her and press MARK TARGET first. Then photograph what she is doing to find out what she likes and what she can do.</p>
         <button class="primary-button" type="button">BEGIN SURVEILLANCE</button>
       </div>

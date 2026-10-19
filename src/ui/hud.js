@@ -27,11 +27,11 @@ export function createHud({
     <div class="hud__top">
       <div class="target-dossier">
         <button class="target-dossier__portrait" type="button" aria-label="Compare Lily's portrait" aria-expanded="false" aria-controls="target-dossier-detail"><img src="./assets/lily.png" alt="Lily" /></button>
-        <div class="target-dossier__summary"><strong>LILY</strong><p>Yellow shirt, long dark hair, red ribbon, blue skirt, green backpack.</p></div>
+        <div class="target-dossier__summary"><strong>LILY</strong><p>Yellow shirt, long dark hair, blue skirt, green backpack.</p></div>
       </div>
       <div class="hud__mission"><div class="hud__objective">Find LILY. Aim at her and press MARK TARGET.</div><div class="hud__counter" aria-live="polite">PHOTOS 0 / 10</div></div>
     </div>
-    <aside class="target-dossier__detail" id="target-dossier-detail" aria-label="Lily's target dossier" hidden><button class="target-dossier__close icon-button" type="button" aria-label="Close portrait">×</button><button class="target-dossier__comparison" type="button" aria-label="Close enlarged portrait"><img src="./assets/lily.png" alt="Lily, wearing a yellow shirt and blue skirt" /></button><strong>LILY</strong><p>Yellow shirt, long dark hair, red ribbon, blue skirt, green backpack.</p></aside>
+    <aside class="target-dossier__detail" id="target-dossier-detail" aria-label="Lily's target dossier" hidden><button class="target-dossier__close icon-button" type="button" aria-label="Close portrait">×</button><button class="target-dossier__comparison" type="button" aria-label="Close enlarged portrait"><img src="./assets/lily.png" alt="Lily, wearing a yellow shirt and blue skirt" /></button><strong>LILY</strong><p>Yellow shirt, long dark hair, blue skirt, green backpack.</p></aside>
     <div class="reticle" aria-hidden="true"><span class="reticle__target" hidden>TARGET IN VIEW</span></div>
     <div class="hud__hint" role="status" hidden></div>
     <div class="hud__toast" role="status" hidden></div>
