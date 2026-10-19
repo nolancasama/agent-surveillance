@@ -20,7 +20,7 @@ Then run `npm run check:lily` and `npm test` from the project root.
 
 ## Scripts
 
-- `scripts/polish_lily.py` reproduces the 2026-10-19 polish. It turns the pre-polish `lily_q.blend` (commit 6ade7b1) into this version: smaller hands and shoes, continuous straps, a level waistband, a rounder skirt hem, the reference face, and smooth shading. It marks the armature `lily_polish` and refuses to run twice.
+- `scripts/polish_lily.py` reproduces the 2026-10-19 polish. It turns the pre-polish `lily_q.blend` (commit 6ade7b1) into this version: smaller hands and shoes, continuous straps, a level waistband, a rounder skirt hem, the anime reference face (tiny wedge nose, soft blush), and smooth shading. It marks the armature `lily_polish` and refuses to run twice.
 - `scripts/build_lily_game.py` flattens the source and exports the GLB. Blush discs fade into the skin colour.
 - `scripts/render_turnaround.py` renders review views without saving the file. Add `walk` for the walk frames and video:
 
@@ -31,6 +31,6 @@ Then run `npm run check:lily` and `npm test` from the project root.
 
 ## Renders
 
-- `renders/`: turnaround views, face/hands/feet close-ups, walk frames, and the walk video (rendered as `walk.mp4`, committed as `lily_walk.mp4`).
+- `renders/`: turnaround views, face (front and three-quarter), hands and feet close-ups, walk frames, and the walk video (rendered as `walk.mp4`, committed as `lily_walk.mp4`).
 - `renders/polish/`: before/after comparison of the polish.
 - `renders/in-game/`: every route action in the game, and the wide, medium and high zoom levels.

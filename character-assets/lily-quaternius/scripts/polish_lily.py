@@ -139,6 +139,8 @@ def front(tree, x, z, offset):
     """New face details: first skin hit looking from in front (-Y), lifted along its normal."""
     location, normal, _, _ = tree.ray_cast(Vector((x, -0.6, z)), Vector((0, 1, 0)), 1.0)
     assert location is not None, (x, z)
+    if normal.y > 0:  # some face skin is wound inwards; always lift towards the viewer
+        normal = -normal
     return location + normal * offset
 
 
@@ -285,7 +287,6 @@ mats = [m.name for m in head.data.materials]
 skin_tree = bvh_for(head, {'Lily_Skin'})
 bm = bmesh.new(); bm.from_mesh(head.data)
 deform = bm.verts.layers.deform.verify()
-head_group = head.vertex_groups['Head'].index
 parts = loose_parts(bm)
 
 
@@ -350,15 +351,78 @@ for side in (1, -1):
     reproject(bvs, brow)
     report.append(f'eye {"LR"[side < 0]}: almond 0.78 tall, lash line x1.12; brow slope {slope:.2f} -> arched, 0.5 thick')
 
-# A small child's nose: the long bridge is shortened towards its tip.
+# Anime nose: the pack's realistic nose (bridge and nostrils) is replaced by a
+# tiny smooth wedge whose tip points slightly down, sunk into the face at its base.
 nose = [p for p in face_parts if p[3] == 'Lily_Skin' and p[4] == 26 and abs(p[1].x) < 0.01]
 assert len(nose) == 1, [(p[3], p[4]) for p in face_parts if p[3] == 'Lily_Skin']
-nose_vs = nose[0][2]
-tip_z = min(v.co.z for v in nose_vs)
-base_y = max(v.co.y for v in nose_vs)
-for v in nose_vs:
-    v.co = Vector((v.co.x * 0.85, base_y + (v.co.y - base_y) * 0.7, tip_z + 0.004 + (v.co.z - tip_z) * 0.55))
-report.append('nose: bridge 0.55 long, 0.7 deep, 0.85 wide')
+tip_z = min(v.co.z for v in nose[0][2])
+bmesh.ops.delete(bm, geom=nose[0][0], context='FACES')
+skin_index = mats.index('Lily_Skin')
+
+
+skin_faces = []
+
+
+def skin_surface():
+    """Details placed from here on project onto the face as it is now. The face
+    has non-planar quads, so use the mesh's own triangles (as rendered and
+    exported), not a re-triangulation along the other diagonal."""
+    bm.verts.index_update()
+    tris = [t for t in bm.calc_loop_triangles() if t[0].face.material_index == skin_index]
+    skin_faces[:] = [t[0].face for t in tris]
+    return BVHTree.FromPolygons([v.co.copy() for v in bm.verts], [[loop.vert.index for loop in t] for t in tris])
+
+
+def stick(v):
+    """Give a face detail the skin weights beneath it (the jaw also follows Neck), so posing never buries it."""
+    _, _, index, _ = skin_tree.find_nearest(v.co)
+    face = skin_faces[index]
+    inverse = [1 / max((u.co - v.co).length, 1e-5) for u in face.verts]
+    total, weights = sum(inverse), {}
+    for u, k in zip(face.verts, inverse):
+        for group, w in u[deform].items():
+            weights[group] = weights.get(group, 0) + w * k / total
+    v[deform].clear()
+    for group, w in weights.items():
+        if w > 1e-4:
+            v[deform][group] = w
+
+
+skin_tree = skin_surface()
+NOSE_W, NOSE_H, NOSE_D = 0.0072, 0.0095, 0.0068  # half width, half height, protrusion
+centre_z = tip_z + NOSE_H
+hit, n, _, _ = skin_tree.ray_cast(Vector((0, -0.6, centre_z)), Vector((0, 1, 0)), 1.0)
+n = -n if n.y > 0 else n
+up = Vector((0, 0, 1)); right = up.cross(n).normalized(); up = n.cross(right).normalized()
+rings, segments = 4, 12
+grid = []
+for i in range(rings):
+    lat = (math.pi / 2) * i / rings
+    row = []
+    for j in range(segments):
+        phi = math.tau * j / segments
+        lower = max(0.0, -math.sin(phi))  # the lower half reaches further out: a downward tip
+        depth = NOSE_D * (0.6 + 0.6 * lower)
+        p = (hit + right * (NOSE_W * math.cos(phi) * math.cos(lat))
+             + up * (NOSE_H * math.sin(phi) * math.cos(lat) - 0.004 * math.sin(lat))
+             + n * (depth * math.sin(lat) - 0.0015))
+        row.append(bm.verts.new(p))
+    grid.append(row)
+apex = bm.verts.new(hit - up * 0.0045 + n * (NOSE_D * 0.95))
+for v in [apex, *(v for row in grid for v in row)]:
+    stick(v)
+nose_faces = []
+for a, b in zip(grid, grid[1:]):
+    for j in range(segments):
+        nose_faces.append(bm.faces.new((a[j], a[(j + 1) % segments], b[(j + 1) % segments], b[j])))
+for j in range(segments):
+    nose_faces.append(bm.faces.new((grid[-1][j], grid[-1][(j + 1) % segments], apex)))
+for f in nose_faces:
+    f.material_index = skin_index
+bmesh.ops.recalc_face_normals(bm, faces=nose_faces)
+skin_tree = skin_surface()
+report.append(f'nose: realistic 52-triangle nose replaced by a {2 * NOSE_W * 100:.1f} x {2 * NOSE_H * 100:.1f} cm '
+              f'anime wedge ({sum(len(f.verts) - 2 for f in nose_faces)} triangles)')
 
 # Open smile replaces the line mouth.
 mouth = [p for p in face_parts if p[3] == 'Lily_Mouth']
@@ -368,7 +432,8 @@ bmesh.ops.delete(bm, geom=mouth[0][0], context='FACES')
 teeth_mat = slot(head, bpy.data.materials['Lily_EyeWhite'])
 mouth_mat = slot(head, bpy.data.materials['Lily_Mouth'])
 tongue_mat = slot(head, material('Lily_Tongue', (0.80, 0.24, 0.22)))
-blush_mat = slot(head, material('Lily_Blush', (0.93, 0.36, 0.30)))
+blush_mat = slot(head, material('Lily_Blush', (0.95, 0.30, 0.27)))
+shadow_mat = slot(head, material('Lily_NoseShadow', (0.74, 0.40, 0.25)))
 W, z0 = 0.021, mouth_c.z + 0.004
 
 
@@ -390,7 +455,7 @@ def strip(xs, lower, upper, mat, lift):
         f = bm.faces.new((a0, b0, b1, a1)); f.material_index = mat
     for row in rows:
         for v in row:
-            v[deform][head_group] = 1.0
+            stick(v)
 
 
 xs = [W * math.sin(math.pi / 2 * (2 * i / 12 - 1)) for i in range(13)]
@@ -401,20 +466,47 @@ low = [x * 0.5 for x in xs]
 strip(low, lambda x: bottom(x) + 0.0012, lambda x: bottom(x) + 0.0062 - 0.002 * (x / (W * 0.5)) ** 2, tongue_mat, 0.0018)
 report.append('mouth: line replaced by an open smile with teeth and tongue')
 
-# Blush discs below the outer eye corners.
+# Soft discs: blush below the outer eye corners and a shadow on one side of the
+# nose. `decal_fade` (1 inside the plateau, 0 at the rim) tells the build how
+# far each vertex moves from skin towards the disc colour.
+fade = bm.verts.layers.float.get('decal_fade') or bm.verts.layers.float.new('decal_fade')
+
+
+def disc(cx, cz, rx, rz, mat, segments, lift, profile):
+    """Concentric rings (scale, fade) so the disc follows the curved skin closely."""
+    rings = []
+    for scale, weight in ((0.0, 1.0), *profile, (1.0, 0.0)):
+        ring = []
+        for i in range(1 if scale == 0 else segments):
+            a = i * math.tau / segments
+            v = bm.verts.new(front(skin_tree, cx + math.cos(a) * rx * scale, cz + math.sin(a) * rz * scale, lift))
+            stick(v)
+            v[fade] = weight
+            ring.append(v)
+        rings.append(ring)
+    _, normal, _, _ = skin_tree.find_nearest(rings[0][0].co)
+    if normal.y > 0:
+        normal = -normal
+    faces = []
+    for j in range(segments):
+        k = (j + 1) % segments
+        faces.append(bm.faces.new((rings[0][0], rings[1][j], rings[1][k])))
+        for inner, outer in zip(rings[1:], rings[2:]):
+            faces.append(bm.faces.new((inner[j], outer[j], outer[k], inner[k])))
+    for f in faces:
+        f.material_index = mat
+        f.normal_update()
+        if f.normal.dot(normal) < 0:  # face outwards, like the skin beneath
+            f.normal_flip()
+
+
 for side in (1, -1):
-    cx, cz = side * 0.083, 1.389
-    centre_v = bm.verts.new(front(skin_tree, cx, cz, 0.0009))
-    ring = [bm.verts.new(front(skin_tree, cx + math.cos(a) * 0.021, cz + math.sin(a) * 0.011, 0.0009))
-            for a in [i * math.tau / 14 for i in range(14)]]
-    for v in [centre_v, *ring]:
-        v[deform][head_group] = 1.0
-    for a, b in zip(ring, ring[1:] + ring[:1]):
-        f = bm.faces.new((centre_v, a, b) if side > 0 else (centre_v, b, a)); f.material_index = blush_mat
-bmesh.ops.recalc_face_normals(bm, faces=[f for f in bm.faces if f.material_index in {blush_mat, mouth_mat, teeth_mat, tongue_mat}])
+    disc(side * 0.076, 1.388, 0.017, 0.0095, blush_mat, 16, 0.0013, ((0.45, 1.0), (0.75, 0.55)))
+disc(0.0068, tip_z + 0.004, 0.0042, 0.0065, shadow_mat, 10, 0.0008, ((0.35, 0.85),))
+bmesh.ops.recalc_face_normals(bm, faces=[f for f in bm.faces if f.material_index in {mouth_mat, teeth_mat, tongue_mat}])
 bm.to_mesh(head.data); bm.free()
 material('Lily_Iris', (0.20, 0.075, 0.018))
-report.append('blush: two 14-segment discs; iris darkened to warm brown')
+report.append('blush: two soft 16-segment discs and a nose-side shadow; iris darkened to warm brown')
 
 # 5. Child-soft limbs and smooth shading ------------------------------------------------
 

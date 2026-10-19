@@ -38,21 +38,18 @@ for name in PARTS:
     attr = me.color_attributes.get('Col') or me.color_attributes.new('Col', 'FLOAT_COLOR', 'CORNER')
     bm = bmesh.new(); bm.from_mesh(me)
     layer = bm.loops.layers.float_color.get('Col') or bm.loops.layers.float_color.new('Col')
-    blush = [i for i, m in enumerate(me.materials) if m.name == 'Lily_Blush']
     for face in bm.faces:
         for loop in face.loops:
             loop[layer] = colours[face.material_index]
-    if blush:
-        fan = [f for f in bm.faces if f.material_index == blush[0]]
-        centres = {v for f in fan for v in f.verts if sum(1 for g in v.link_faces if g in fan) > 2}
-        for centre in centres:
-            disc = [f for f in centre.link_faces if f in fan]
-            radius = max((v.co - centre.co).length for f in disc for v in f.verts)
-            for f in disc:
+    # Soft discs (blush, nose shadow): polish_lily.py stores each vertex's share
+    # of the disc colour in `decal_fade`; the rim is pure skin, so no edge shows.
+    fade = bm.verts.layers.float.get('decal_fade')
+    for index in [i for i, m in enumerate(me.materials) if m.name in {'Lily_Blush', 'Lily_NoseShadow'}]:
+        for f in bm.faces:
+            if f.material_index == index:
                 for loop in f.loops:
-                    t = 1 - (loop.vert.co - centre.co).length / radius  # 1 at the centre, 0 at the rim
-                    b = colours[blush[0]]
-                    loop[layer] = tuple(s + (c - s) * t ** 1.5 for s, c in zip(skin, b))
+                    t = loop.vert[fade]
+                    loop[layer] = tuple(s + (c - s) * t for s, c in zip(skin, colours[index]))
     bm.to_mesh(me); bm.free()
     me.color_attributes.active_color = me.color_attributes['Col']
     me.color_attributes.render_color_index = me.color_attributes.active_color_index

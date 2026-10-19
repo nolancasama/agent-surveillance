@@ -89,6 +89,8 @@ def bone_head(name):
 
 CLOSE = {
     'face': (bone_head('Head') + Vector((0, 0, height * 0.09)), (0, -1, 0.05), height * 0.23),
+    'face_three_quarter': (bone_head('Head') + Vector((0, 0, height * 0.09)), (0.7, -0.7, 0.05), height * 0.23),
+    'face_side': (bone_head('Head') + Vector((0, 0, height * 0.09)), (1, 0, 0.05), height * 0.23),
     'hands': (bone_head('Wrist.R') + Vector((0, 0, -0.03)), (0.55, -1, 0.15), height * 0.30),
     'feet': (Vector((centre.x, centre.y, lo.z + height * 0.07)), (0.45, -1, 0.35), height * 0.30),
 }
