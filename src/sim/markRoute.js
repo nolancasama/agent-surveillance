@@ -199,6 +199,7 @@ export const MARK_SEGMENTS = Object.freeze([
     ],
     propPhases: [
       { until: 0.45, value: ['bike', 'basket_bouquet'] },
+      { until: 0.72, value: [] },
       { until: 1, value: ['phone'] },
     ],
   },

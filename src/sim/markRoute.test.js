@@ -78,7 +78,7 @@ const OBSTACLES = [
   ]),
   { ...box('lily cafe chair', -14.06, -12.21, .25, .3, .25), seat: { x: -14, z: -12 } },
   { ...box('bench (6, 8)', 6, 8, 1.15, .32, Math.PI - .35), seat: { x: 5.94, z: 8.16 } },
-  box('bench (-3, -9)', -3, -9, 1.15, .32, Math.PI + .25),
+  box('bench (-3, -9)', -3, -9, 1.15, .32, .25),
   ...[[-20, -16], [20, -16], [-20, 15], [20, 15]].map(([x, z]) => circle('lamp', x, z, .25)),
   circle('bin', -19.3, 17, .37), circle('bin', 19.3, -18, .37), circle('planter', -20, 4, .53), circle('planter', 20, -2, .53),
 ];

@@ -282,6 +282,7 @@ export function updatePerson(person, state = {}, time = 0) {
   const smell = ['smell_flowers', 'bend', 'straighten'].includes(action);
   const buy = ['buy_flowers', 'pay', 'receive', 'hold_up'].includes(action);
   const sitting = ['sit', 'sit_phone', 'sit_down', 'stand_up'].includes(action);
+  const crouch = action === 'tie_shoe';
   // The long-hair decoy's walking hem stays centred on her hip pivot.
   const walkingDrape = walk && person.userData.personId !== 'orange_long_hair';
   if (r.activeSkirt) r.hips.geometry = walkingDrape || ride || sitting ? r.activeSkirt : r.neutralSkirt;
@@ -293,11 +294,11 @@ export function updatePerson(person, state = {}, time = 0) {
   if (action === 'stand_up') sit = timed ? 1 - smooth(Math.max(0, phaseDuration - 1.2), phaseDuration, phaseElapsed)
     : 1 - smooth(.88, 1, progress);
   const lean = smell ? .72 * smooth(0, .2, progress) * (1 - smooth(.78, 1, progress))
-    : water ? .17 : ['tie_shoe', 'lock_bike'].includes(action) ? .65 : ride ? .55 : 0;
+    : water ? .17 : crouch ? .95 : action === 'lock_bike' ? .45 : ride ? .55 : 0;
   // A smaller bike lowers the saddle (top at .98 in bike space) and brings the bars closer.
   const bikeScale = person.userData.isLily ? CHILD_BIKE_SCALE : 1;
   const values = [walk ? .012 * (1 - Math.cos(stride * 2)) : .008 * Math.sin(phase * 2),
-    -.30 * sit + (ride ? .13 - .98 * (1 - bikeScale) : scooter ? .08 : 0), lean,
+    -.30 * sit + (ride ? .13 - .98 * (1 - bikeScale) : scooter ? .08 : crouch ? -.25 : 0), lean,
     walk ? Math.sin(stride) * .50 : -.05, walk ? -Math.sin(stride) * .50 : -.05,
     walk ? -Math.sin(stride) * .40 : -1.30 * sit, walk ? Math.sin(stride) * .40 : -1.30 * sit,
     walk ? Math.max(0, Math.sin(stride)) * .65 : 1.35 * sit,
@@ -351,6 +352,12 @@ export function updatePerson(person, state = {}, time = 0) {
     rightTarget.set(.29, 1.32, .23); rightIK = true;
   } else if (smell) {
     leftTarget.set(-.30, .88, .42); rightTarget.set(.30, .88, .42); leftIK = rightIK = true;
+  } else if (crouch) {
+    // Both hands at the laces of the forward (left) shoe.
+    leftTarget.set(-.15, .5, .42); rightTarget.set(-.03, .52, .44); leftIK = rightIK = true;
+  } else if (action === 'lock_bike') {
+    // Reach down to the bike frame beside her right hip.
+    rightTarget.set(.42, .72, .12); leftTarget.set(.30, .78, .22); leftIK = rightIK = true;
   }
   if (r.phone.visible) {
     rightTarget.set(.14, 1.39 + values[1], .34); rightIK = true;
@@ -370,7 +377,8 @@ export function updatePerson(person, state = {}, time = 0) {
   }
   if (r.wateringCan.visible) {
     const lift = smooth(0, .22, progress) * (1 - smooth(.82, 1, progress));
-    rightTarget.set(.31, .88 + .52 * lift, .28 + .06 * lift); rightIK = true;
+    // Raised high enough that the stream shows above the flowers from the post.
+    rightTarget.set(.31, .88 + .64 * lift, .28 + .1 * lift); rightIK = true;
     leftTarget.set(-.10, 1.20, .35); leftIK = true;
   }
   if (ride || action === 'push_bike' || scooter) {
@@ -403,6 +411,11 @@ export function updatePerson(person, state = {}, time = 0) {
     reach(person, r.rightLeg, point(.21, .10 + Math.max(0, Math.sin(stride)) * .17, -.28 - Math.sin(stride) * .25));
     heldLevel(r.leftLeg); heldLevel(r.rightLeg);
     r.scooter.userData.spin?.(phase * 2.5);
+  } else if (crouch) {
+    // Feet stay planted while the hips drop.
+    reach(person, r.leftLeg, point(-.13, .10, .16), [0, 0, 1]);
+    reach(person, r.rightLeg, point(.13, .10, -.12), [0, 0, 1]);
+    heldLevel(r.leftLeg); heldLevel(r.rightLeg);
   } else if (walk) {
     for (const leg of [r.leftLeg, r.rightLeg]) {
       const step = Math.sin(stride) * -leg.side;

@@ -684,8 +684,9 @@ export function createMarketScene(sceneOrOptions = {}, maybeOptions = {}) {
   props.parkedBike.rotation.y = Math.PI / 2;
   props.cafe = createCafeSet(-14, -12);
   props.benches = [
-    // Square benches face the observation post, matching how people sit on them.
-    createBench(6, 8, Math.PI - 0.35), createBench(-3, -9, Math.PI + 0.25),
+    // Lily's bench faces the observation post so she sits towards it; the bench
+    // sitter arrives from the south and sits facing the shops.
+    createBench(6, 8, Math.PI - 0.35), createBench(-3, -9, 0.25),
     createBench(-8, 35, Math.PI / 2), createBench(8, 49, -Math.PI / 2),
   ];
   root.add(
